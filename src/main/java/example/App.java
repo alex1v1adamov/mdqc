@@ -5,6 +5,7 @@
  */
 package example;
 
+import com.cosium.spring.data.jpa.entity.graph.repository.support.EntityGraphJpaRepositoryFactoryBean;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.info.Info;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
  * Example app using elide-spring.
@@ -23,6 +25,8 @@ import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 @EntityScan
 @ImportRuntimeHints(AppRuntimeHints.class)
 @OpenAPIDefinition(info = @Info(title = "My Title"), security = @SecurityRequirement(name = "bearerAuth"))
+@EnableJpaRepositories(repositoryFactoryBeanClass = EntityGraphJpaRepositoryFactoryBean.class)
+
 @SecurityScheme(
         name = "bearerAuth",
         type = SecuritySchemeType.HTTP,

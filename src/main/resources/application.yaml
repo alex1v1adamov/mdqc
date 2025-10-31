@@ -32,7 +32,7 @@ elide:
     export:
       enabled: false
   aggregation-store:
-    enabled: true
+    enabled: false
     default-dialect: h2
     metadata-store:
       enabled: false
@@ -48,21 +48,23 @@ spring:
   profiles:
     active: local
   jpa:
+#     database-platform: org.hibernate.dialect.PostgreSQLDialect
     show-sql: true
     properties:
       hibernate:
         '[default_batch_fetch_size]': 100
         '[use_scrollable_resultset]': true
     hibernate:
+      ddl-auto: validate
       naming:
         physical-strategy: 'org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl'
   datasource:
-    url: 'jdbc:h2:mem:db1;DB_CLOSE_DELAY=-1'
-    username: 'sa'
-    password: ''
-    driver-class-name: 'org.h2.Driver'
+    url: 'jdbc:postgresql://localhost:8432/dnp'
+    username: 'user1'
+    password: '1qaz2wsx!!'
+    driver-class-name: org.postgresql.Driver
   liquibase:
-    enabled: true
+    enabled: false
     change-log: 'classpath:db/changelog/changelog.xml'
   activemq:
     broker-url: 'vm://embedded?broker.persistent=false,useShutdownHook=false'
