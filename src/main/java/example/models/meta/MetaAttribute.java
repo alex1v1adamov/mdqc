@@ -18,6 +18,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Immutable;
 
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -45,7 +46,7 @@ public class MetaAttribute {
     private UUID id;
 
     /**
-     * Имя атрибута в метамодели (например, "nameInNms" для коллекции)
+     * Имя атрибута в метамодели (например, "baseStations" для коллекции)
      */
     @Column(nullable = false)
     private String name;
@@ -79,8 +80,9 @@ public class MetaAttribute {
     /**
      * тип для AttributeCategory.BASIC
      */
+    @Enumerated(EnumType.STRING)
     @Column(name = "basic_type")
-    private String attributeBasicType;
+    private BasicType basicType;
 
     /**
      * тип для AttributeCategory.ENTITY

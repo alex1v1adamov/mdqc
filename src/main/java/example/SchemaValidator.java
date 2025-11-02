@@ -1,8 +1,7 @@
 package example;
 
 import com.cosium.spring.data.jpa.entity.graph.domain2.DynamicEntityGraph;
-import example.models.meta.MetaAttribute;
-import example.models.meta.MetaEntity;
+import example.models.meta.*;
 import example.repo.MetaEntityRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManagerFactory;
@@ -17,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -51,125 +51,164 @@ public class SchemaValidator {
         validateEntities(businessEntities, businessEntitiesMetaData);
     }
 
-    private void validateEntities(List<EntityType<?>> metamodelEntities, List<MetaEntity> metaEntities) {
-        List<String> discrepancies = new ArrayList<>();
+    private void validateEntities(List<EntityType<?>> jpaEntities, List<MetaEntity> metaEntities) {
+        List<String> problems = new ArrayList<>();
 
-        // Преобразуем в множества имен для удобства сравнения
-        Set<String> metamodelEntityNames = metamodelEntities.stream()
-                .map(EntityType::getName)
-                .collect(Collectors.toSet());
+        // Создаем мапы для быстрого поиска
+        Map<String, EntityType<?>> jpaEntitiesMap = jpaEntities.stream()
+                .collect(Collectors.toMap(
+                        entity -> entity.getJavaType().getSimpleName(),
+                        entity -> entity
+                ));
 
-        Set<String> metaEntityNames = metaEntities.stream()
-                .map(MetaEntity::getName)
-                .collect(Collectors.toSet());
+        Map<String, MetaEntity> metaEntitiesMap = metaEntities.stream()
+                .collect(Collectors.toMap(
+                        MetaEntity::getName,
+                        entity -> entity
+                ));
 
-        // Проверка: есть в метамодели, но нет в БД - WARN
-        for (String metamodelName : metamodelEntityNames) {
-            if (!metaEntityNames.contains(metamodelName)) {
-                logger.warn("Entity '{}' found in metamodel but not in database metadata", metamodelName);
+        // Отсутствие MetaEntity для JPA сущности - это нормально, только логируем INFO
+        for (EntityType<?> jpaEntity : jpaEntities) {
+            String entityName = jpaEntity.getJavaType().getSimpleName();
+            if (!metaEntitiesMap.containsKey(entityName)) {
+                logger.info("JPA сущность {} не имеет соответствующей MetaEntity (это нормально)", entityName);
             }
         }
 
-        // Проверка: есть в БД, но нет в метамодели - ERROR
-        for (String metaName : metaEntityNames) {
-            if (!metamodelEntityNames.contains(metaName)) {
-                discrepancies.add("Entity '" + metaName + "' found in database metadata but not in metamodel");
+        // Лишние MetaEntity без JPA сущности - это нормально, только логируем INFO
+        for (MetaEntity metaEntity : metaEntities) {
+            if (!jpaEntitiesMap.containsKey(metaEntity.getName())) {
+                logger.info("MetaEntity {} не имеет соответствующей JPA сущности (это нормально)", metaEntity.getName());
             }
         }
 
-        // Проверка соответствия атрибутов для существующих сущностей
-        for (EntityType<?> metamodelEntity : metamodelEntities) {
-            MetaEntity metaEntity = metaEntities.stream()
-                    .filter(me -> me.getName().equals(metamodelEntity.getName()))
-                    .findFirst()
-                    .orElse(null);
+        // Проверяем атрибуты только для существующих пар сущностей
+        for (EntityType<?> jpaEntity : jpaEntities) {
+            String entityName = jpaEntity.getJavaType().getSimpleName();
+            MetaEntity metaEntity = metaEntitiesMap.get(entityName);
 
             if (metaEntity != null) {
-                validateAttributes(metamodelEntity, metaEntity, discrepancies);
+                validateAttributes(jpaEntity, metaEntity, problems);
             }
         }
 
-        // Если найдены расхождения - выбрасываем исключение
-        if (!discrepancies.isEmpty()) {
-            String errorMessage = "Schema validation failed:\n" + String.join("\n", discrepancies);
+        // Если есть критические проблемы - бросаем исключение
+        if (!problems.isEmpty()) {
+            String errorMessage = "Обнаружены несоответствия схемы:\n" +
+                    String.join("\n", problems);
             logger.error(errorMessage);
-            throw new IllegalStateException(errorMessage);
+            throw new IllegalStateException("Валидация схемы не пройдена. Проверьте логи для деталей.");
         }
 
-        logger.info("Schema validation completed successfully");
+        logger.info("Валидация схемы успешно завершена");
     }
 
-    private void validateAttributes(EntityType<?> metamodelEntity, MetaEntity metaEntity, List<String> discrepancies) {
-        String entityName = metamodelEntity.getName();
+    private void validateAttributes(EntityType<?> jpaEntity, MetaEntity metaEntity, List<String> problems) {
+        Map<String, MetaAttribute> metaAttributesMap = metaEntity.getAttributes().stream()
+                .collect(Collectors.toMap(
+                        MetaAttribute::getName,
+                        attr -> attr
+                ));
 
-        // Получаем атрибуты из метамодели
-        Set<String> metamodelAttributeNames = metamodelEntity.getAttributes().stream()
-                .map(Attribute::getName)
-                .collect(Collectors.toSet());
+        // Проверяем JPA атрибуты
+        for (Attribute<?, ?> jpaAttribute : jpaEntity.getAttributes()) {
+            String attributeName = jpaAttribute.getName();
+            MetaAttribute metaAttribute = metaAttributesMap.get(attributeName);
 
-        // Получаем атрибуты из БД
-        Set<String> metaAttributeNames = metaEntity.getAttributes().stream()
-                .map(MetaAttribute::getName)
-                .collect(Collectors.toSet());
-
-        // Проверка: есть в метамодели, но нет в БД - WARN
-        for (String metamodelAttrName : metamodelAttributeNames) {
-            if (!metaAttributeNames.contains(metamodelAttrName)) {
-                logger.warn("Attribute '{}.{}' found in metamodel but not in database metadata",
-                        entityName, metamodelAttrName);
+            // Отсутствие MetaAttribute - это нормально, только логируем INFO
+            if (metaAttribute == null) {
+                logger.info("Атрибут {} сущности {} не имеет соответствующего MetaAttribute (это нормально)",
+                        attributeName, metaEntity.getName());
+                continue;
             }
+
+//            // Пропускаем служебные атрибуты
+//            if (isSystemAttribute(attributeName)) {
+//                metaAttributesMap.remove(attributeName);
+//                continue;
+//            }
+
+            // Валидируем соответствие типа атрибута (это уже критично)
+            validateAttributeType(jpaAttribute, metaAttribute, metaEntity.getName(), problems);
+
+            // Удаляем проверенный атрибут из мапы
+            metaAttributesMap.remove(attributeName);
         }
 
-        // Проверка: есть в БД, но нет в метамодели - ERROR
-        for (String metaAttrName : metaAttributeNames) {
-            if (!metamodelAttributeNames.contains(metaAttrName)) {
-                discrepancies.add("Attribute '" + entityName + "." + metaAttrName +
-                        "' found in database metadata but not in metamodel");
-            }
-        }
-
-        // Дополнительная проверка типов атрибутов для существующих атрибутов
-        for (Attribute<?, ?> metamodelAttr : metamodelEntity.getAttributes()) {
-            MetaAttribute metaAttr = metaEntity.getAttributes().stream()
-                    .filter(ma -> ma.getName().equals(metamodelAttr.getName()))
-                    .findFirst()
-                    .orElse(null);
-
-            if (metaAttr != null) {
-                validateAttributeType(metamodelAttr, metaAttr, entityName, discrepancies);
-            }
+        // Лишние MetaAttribute - это нормально, только логируем INFO
+        for (MetaAttribute extraAttribute : metaAttributesMap.values()) {
+            logger.info("MetaAttribute {} сущности {} не имеет соответствующего JPA атрибута (это нормально)",
+                    extraAttribute.getName(), metaEntity.getName());
         }
     }
 
-    private void validateAttributeType(Attribute<?, ?> metamodelAttr, MetaAttribute metaAttr,
-                                       String entityName, List<String> discrepancies) {
-        String attrName = metamodelAttr.getName();
+    private void validateAttributeType(Attribute<?, ?> jpaAttribute, MetaAttribute metaAttribute,
+                                       String entityName, List<String> problems) {
+        // Определяем ожидаемый тип атрибута
+        AttributeType expectedType = jpaAttribute.isCollection() ?
+                AttributeType.PLURAL : AttributeType.SINGULAR;
 
-        // Проверка типа атрибута (SINGULAR/PLURAL)
-        boolean isPluralInMetamodel = metamodelAttr.isCollection();
-        boolean isPluralInMeta = "PLURAL".equals(metaAttr.getType().name());
-
-        if (isPluralInMetamodel != isPluralInMeta) {
-            discrepancies.add("Attribute type mismatch for '" + entityName + "." + attrName +
-                    "': metamodel=" + (isPluralInMetamodel ? "PLURAL" : "SINGULAR") +
-                    ", metadata=" + (isPluralInMeta ? "PLURAL" : "SINGULAR"));
+        if (metaAttribute.getType() != expectedType) {
+            problems.add(String.format(
+                    "Несоответствие типа атрибута %s в сущности %s: ожидается %s, но найдено %s",
+                    metaAttribute.getName(), entityName, expectedType, metaAttribute.getType()
+            ));
         }
 
-        // Проверка категории типа (BASIC/ENTITY)
-        if (!isPluralInMetamodel) {
-            // Для не-коллекций проверяем Java тип
-            Class<?> javaType = metamodelAttr.getJavaType();
-            boolean isEntityInMetamodel = !javaType.isPrimitive() &&
-                    !javaType.getName().startsWith("java.") &&
-                    !javaType.isEnum();
+        // Для SINGULAR атрибутов проверяем категорию
+        if (metaAttribute.getType() == AttributeType.SINGULAR) {
+            Class<?> jpaAttributeType = jpaAttribute.getJavaType();
+            AttributeCategory expectedCategory = determineAttributeCategory(jpaAttributeType);
 
-            boolean isEntityInMeta = "ENTITY".equals(metaAttr.getAttributeCategory().name());
+            if (metaAttribute.getAttributeCategory() != expectedCategory) {
+                problems.add(String.format(
+                        "Несоответствие категории атрибута %s в сущности %s: ожидается %s, но найдено %s",
+                        metaAttribute.getName(), entityName, expectedCategory, metaAttribute.getAttributeCategory()
+                ));
+            }
 
-            if (isEntityInMetamodel != isEntityInMeta) {
-                discrepancies.add("Attribute category mismatch for '" + entityName + "." + attrName +
-                        "': metamodel=" + (isEntityInMetamodel ? "ENTITY" : "BASIC") +
-                        ", metadata=" + (isEntityInMeta ? "ENTITY" : "BASIC"));
+            // Если категория BASIC, проверяем конкретный BasicType
+            if (metaAttribute.getAttributeCategory() == AttributeCategory.BASIC &&
+                    metaAttribute.getBasicType() != null) {
+                BasicType expectedBasicType = determineBasicType(jpaAttributeType);
+                if (expectedBasicType != null && metaAttribute.getBasicType() != expectedBasicType) {
+                    problems.add(String.format(
+                            "Несоответствие BasicType атрибута %s в сущности %s: ожидается %s, но найдено %s",
+                            metaAttribute.getName(), entityName, expectedBasicType, metaAttribute.getBasicType()
+                    ));
+                }
             }
         }
+    }
+
+    private AttributeCategory determineAttributeCategory(Class<?> javaType) {
+        if (isCurrentlySupportedBasicType(javaType)) {
+            return AttributeCategory.BASIC;
+        }
+        return AttributeCategory.ENTITY;
+    }
+
+    private boolean isCurrentlySupportedBasicType(Class<?> javaType) {
+        return javaType == String.class ||
+                javaType == Boolean.class || javaType == boolean.class ||
+                javaType == Integer.class || javaType == int.class;
+    }
+
+    private BasicType determineBasicType(Class<?> javaType) {
+        if (javaType == String.class) {
+            return BasicType.STRING;
+        } else if (javaType == Boolean.class || javaType == boolean.class) {
+            return BasicType.BOOLEAN;
+        } else if (javaType == Integer.class || javaType == int.class) {
+            return BasicType.INTEGER;
+        }
+        return null;
+    }
+
+    private boolean isSystemAttribute(String attributeName) {
+        return "id".equals(attributeName) ||
+                "version".equals(attributeName) ||
+                attributeName.contains("$") ||
+                attributeName.startsWith("_");
     }
 }
