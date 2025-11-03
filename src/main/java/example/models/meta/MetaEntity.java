@@ -1,6 +1,5 @@
 package example.models.meta;
 
-
 import com.yahoo.elide.annotation.Include;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -47,10 +46,16 @@ public class MetaEntity {
     private UUID id;
 
     /**
-     * Имя сущности в метамодели (короткое имя, например "User")
+     * Полное имя класса сущности (например "com.example.models.User")
      */
-    @Column(nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
+
+//    /**
+//     * Короткое имя сущности (например "User")
+//     */
+//    @Column(name = "simple_name", nullable = false)
+//    private String simpleName;
 
     /**
      * Все атрибуты (поля) данной сущности
@@ -67,6 +72,4 @@ public class MetaEntity {
     @Fetch(FetchMode.SUBSELECT)
     @BatchSize(size = 50)
     private Set<MetaAttribute> entityAttributes = new HashSet<>();
-
-
 }

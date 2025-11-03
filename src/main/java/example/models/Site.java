@@ -5,6 +5,7 @@
  */
 package example.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.yahoo.elide.annotation.Include;
 import com.yahoo.elide.annotation.LifeCycleHookBinding;
 import com.yahoo.elide.annotation.UpdatePermission;
@@ -19,6 +20,8 @@ import lombok.Data;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +36,8 @@ import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.P
 @Data
 @LifeCycleHookBinding(operation = UPDATE, phase = PRECOMMIT, hook = TestHook.class)
 @UpdatePermission(expression = "RSMD")
+@Getter
+@Setter
 public class Site {
     @Id
     private String id = "";
@@ -47,5 +52,6 @@ public class Site {
 
     @SubscriptionField
     @OneToMany(mappedBy = "site")
+    @JsonIgnore
     private List<BaseStation> baseStations = new ArrayList<>();
 }

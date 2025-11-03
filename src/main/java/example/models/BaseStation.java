@@ -12,10 +12,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 @Include(rootLevel = false, name = "baseStation")
 @Table(schema = "ri", name = "base_station")
 @Entity
+@Getter
+@Setter
 public class BaseStation {
     @Id
     private String id = "";

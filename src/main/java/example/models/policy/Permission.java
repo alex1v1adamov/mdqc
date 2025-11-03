@@ -58,4 +58,6 @@ public class Permission {
     @JoinColumn(name = "attribute_id", nullable = false)
     MetaAttribute attribute;
 
+
+
 }

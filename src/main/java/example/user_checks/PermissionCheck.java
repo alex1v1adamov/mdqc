@@ -6,6 +6,7 @@ import com.yahoo.elide.core.security.RequestScope;
 import com.yahoo.elide.core.security.User;
 import com.yahoo.elide.core.security.checks.OperationCheck;
 import example.models.policy.Permission;
+import example.models.policy.QPermission;
 import example.models.policy.UserRole;
 import example.repo.PermissionRepository;
 import io.vavr.collection.Stream;
@@ -14,8 +15,8 @@ import io.vavr.control.Try;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Optional;
+
 
 @SecurityCheck("RSMD")
 @Component
@@ -26,18 +27,19 @@ public class PermissionCheck extends OperationCheck<Object> {
 
     @Override
     public boolean ok(final Object object, final RequestScope requestScope, final Optional<ChangeSpec> optional) {
+
         ChangeSpec changeSpec = optional.get();
         String entityName = changeSpec.getResource().getResourceType().getSimpleName();
         Object attributeName = changeSpec.getFieldName();
         User user = requestScope.getUser();
         UserRole userRole = UserRole.USER;
-        List<Permission> permissions = permissionRepository.findAll();
+        Iterable<Permission> permissions = permissionRepository.findAll(QPermission.permission.entity.name.eq(object.getClass().getName()));
 
         return checkPermissions(permissions, entityName, userRole, attributeName);
     }
 
     private boolean checkPermissions(
-            final List<Permission> permissions,
+            final Iterable<Permission> permissions,
             final String entityName,
             final UserRole userRole,
             final Object attributeName) {

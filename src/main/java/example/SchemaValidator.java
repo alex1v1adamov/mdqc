@@ -34,7 +34,9 @@ public class SchemaValidator {
     @PostConstruct
     @Transactional
     public void validateSchema() {
-        List<Class<?>> metaDataClasses = List.of(MetaEntity.class, MetaAttribute.class);
+        List<Class<?>> metaDataClasses = List.of(
+                MetaEntity.class, MetaAttribute.class
+        );
 
         Metamodel metamodel = entityManagerFactory.getMetamodel();
         Set<EntityType<?>> entities = metamodel.getEntities();
@@ -49,6 +51,7 @@ public class SchemaValidator {
         );
 
         validateEntities(businessEntities, businessEntitiesMetaData);
+        logger.info("Schema validation correct");
     }
 
     private void validateEntities(List<EntityType<?>> jpaEntities, List<MetaEntity> metaEntities) {
@@ -57,7 +60,7 @@ public class SchemaValidator {
         // Создаем мапы для быстрого поиска
         Map<String, EntityType<?>> jpaEntitiesMap = jpaEntities.stream()
                 .collect(Collectors.toMap(
-                        entity -> entity.getJavaType().getSimpleName(),
+                        entity -> entity.getJavaType().getName(),
                         entity -> entity
                 ));
 
@@ -69,7 +72,7 @@ public class SchemaValidator {
 
         // Отсутствие MetaEntity для JPA сущности - это нормально, только логируем INFO
         for (EntityType<?> jpaEntity : jpaEntities) {
-            String entityName = jpaEntity.getJavaType().getSimpleName();
+            String entityName = jpaEntity.getJavaType().getName();
             if (!metaEntitiesMap.containsKey(entityName)) {
                 logger.info("JPA сущность {} не имеет соответствующей MetaEntity (это нормально)", entityName);
             }
@@ -84,7 +87,7 @@ public class SchemaValidator {
 
         // Проверяем атрибуты только для существующих пар сущностей
         for (EntityType<?> jpaEntity : jpaEntities) {
-            String entityName = jpaEntity.getJavaType().getSimpleName();
+            String entityName = jpaEntity.getJavaType().getName();
             MetaEntity metaEntity = metaEntitiesMap.get(entityName);
 
             if (metaEntity != null) {
