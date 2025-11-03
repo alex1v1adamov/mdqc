@@ -6,10 +6,8 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.PathBuilder;
 import example.models.meta.AttributeCategory;
-import example.models.meta.BasicType;
 import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEntity;
-import example.models.predicate.NodeType;
 import example.models.predicate.OperatorType;
 import example.models.predicate.PredicateDefinition;
 import example.models.predicate.PredicateNode;
@@ -18,7 +16,6 @@ import example.models.predicate.PredicatePathExpression;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Service
 public class PredicateGeneratorService {
@@ -39,8 +36,8 @@ public class PredicateGeneratorService {
         return switch (node.getNodeType()) {
             case LOGICAL_OPERATOR -> buildLogicalPredicate(node, entityPath);
             case COMPARISON_OPERATOR -> buildComparisonPredicate(node, entityPath);
-            case ATTRIBUTE_REFERENCE -> buildAttributeReferencePredicate(node, entityPath);
-            case VALUE_CONSTANT -> throw new IllegalArgumentException("VALUE_CONSTANT cannot be used as standalone predicate");
+            case VALUE_CONSTANT ->
+                    throw new IllegalArgumentException("VALUE_CONSTANT cannot be used as standalone predicate");
             case PATH_EXPRESSION -> buildPathExpressionPredicate(node, entityPath);
         };
     }
@@ -74,38 +71,70 @@ public class PredicateGeneratorService {
     }
 
     private BooleanExpression buildComparisonPredicate(PredicateNode node, PathBuilder<?> entityPath) {
-        Expression<?> left = buildExpression(node.getLeftOperand(), entityPath);
+        // Для операторов IS_NULL и IS_NOT_NULL используем только meta_attribute
+        if (node.getOperatorType() == OperatorType.IS_NULL || node.getOperatorType() == OperatorType.IS_NOT_NULL) {
+            Expression<?> attributeExpression = buildAttributeExpression(node.getMetaAttribute(), entityPath);
+            if (attributeExpression == null) return null;
+
+            return node.getOperatorType() == OperatorType.IS_NULL
+                    ? Expressions.predicate(Ops.IS_NULL, attributeExpression)
+                    : Expressions.predicate(Ops.IS_NOT_NULL, attributeExpression);
+        }
+
+        // Для остальных операторов сравнения используем левый и правый операнды
+        Expression<?> left = buildOperandExpression(node.getLeftOperand(), entityPath);
         if (left == null) return null;
 
         return switch (node.getOperatorType()) {
-            case IS_NULL -> Expressions.predicate(Ops.IS_NULL, left);
-            case IS_NOT_NULL -> Expressions.predicate(Ops.IS_NOT_NULL, left);
-            case EQ, NE -> buildEqualityPredicate(node, entityPath, left);
+            case EQ, NE -> buildEqualityPredicate(node, left, entityPath);
             default -> throw new IllegalArgumentException("Unsupported comparison operator: " + node.getOperatorType());
         };
     }
 
-    private BooleanExpression buildEqualityPredicate(PredicateNode node, PathBuilder<?> entityPath, Expression<?> left) {
-        Expression<?> right = buildExpression(node.getRightOperand(), entityPath);
+    private BooleanExpression buildEqualityPredicate(PredicateNode node, Expression<?> left, PathBuilder<?> entityPath) {
+        Expression<?> right = buildOperandExpression(node.getRightOperand(), entityPath);
         if (right == null) return null;
 
         Ops operator = node.getOperatorType() == OperatorType.EQ ? Ops.EQ : Ops.NE;
         return Expressions.booleanOperation(operator, left, right);
     }
 
+    // Новый метод для построения выражений операндов (без рекурсии для COMPARISON_OPERATOR)
+    private Expression<?> buildOperandExpression(PredicateNode node, PathBuilder<?> entityPath) {
+        if (node == null) return null;
+
+        return switch (node.getNodeType()) {
+            case VALUE_CONSTANT -> buildConstantExpression(node);
+            case PATH_EXPRESSION -> buildPathExpression(node, entityPath);
+            case COMPARISON_OPERATOR -> {
+                // Для COMPARISON_OPERATOR в операндах - это атрибут, а не предикат
+                // Создаем выражение атрибута из meta_attribute
+                yield buildAttributeExpression(node.getMetaAttribute(), entityPath);
+            }
+            default -> throw new IllegalArgumentException("Unsupported operand node type: " + node.getNodeType());
+        };
+    }
+
+    // Старый метод buildExpression оставляем только для внутреннего использования
     private Expression<?> buildExpression(PredicateNode node, PathBuilder<?> entityPath) {
         if (node == null) return null;
 
         return switch (node.getNodeType()) {
-            case ATTRIBUTE_REFERENCE -> buildAttributeExpression(node, entityPath);
             case VALUE_CONSTANT -> buildConstantExpression(node);
             case PATH_EXPRESSION -> buildPathExpression(node, entityPath);
+            case COMPARISON_OPERATOR -> {
+                // Для выражений, которые используют COMPARISON_OPERATOR как часть большего выражения
+                // Создаем BooleanExpression и преобразуем его в Expression
+                BooleanExpression booleanExpr = buildComparisonPredicate(node, entityPath);
+                yield booleanExpr != null ? Expressions.asBoolean(booleanExpr) : null;
+            }
             default -> throw new IllegalArgumentException("Unsupported expression node type: " + node.getNodeType());
         };
     }
 
-    private Expression<?> buildAttributeExpression(PredicateNode node, PathBuilder<?> entityPath) {
-        MetaAttribute metaAttribute = node.getMetaAttribute();
+    // Вынесен в отдельный метод для использования в COMPARISON_OPERATOR
+    private Expression<?> buildAttributeExpression(MetaAttribute metaAttribute, PathBuilder<?> entityPath) {
+        if (metaAttribute == null) return null;
         return createTypedExpression(entityPath, metaAttribute);
     }
 
@@ -202,12 +231,6 @@ public class PredicateGeneratorService {
             case DATE -> Expressions.constant(valueObj);
             case ENUM -> Expressions.constant(valueObj.toString());
         };
-    }
-
-    private BooleanExpression buildAttributeReferencePredicate(PredicateNode node, PathBuilder<?> entityPath) {
-        Expression<?> attributeExpression = buildAttributeExpression(node, entityPath);
-        return attributeExpression != null ?
-                Expressions.predicate(Ops.IS_NOT_NULL, attributeExpression) : null;
     }
 
     private BooleanExpression buildPathExpressionPredicate(PredicateNode node, PathBuilder<?> entityPath) {

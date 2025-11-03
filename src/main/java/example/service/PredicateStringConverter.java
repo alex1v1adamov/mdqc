@@ -52,8 +52,6 @@ public class PredicateStringConverter {
                 case COMPARISON_OPERATOR:
                     return convertComparisonOperatorToString(node);
 
-                case ATTRIBUTE_REFERENCE:
-                    return convertAttributeReferenceToString(node);
 
                 case VALUE_CONSTANT:
                     return convertValueConstantToString(node);

@@ -45,7 +45,7 @@ public class PredicateNode {
     private OperatorType operatorType;
 
     // === ССЫЛКА НА АТТРИБУТ ===
-
+    // Теперь используется только в PATH_EXPRESSION и COMPARISON_OPERATOR
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meta_attribute_id")
     private MetaAttribute metaAttribute;
@@ -56,7 +56,6 @@ public class PredicateNode {
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "path_expression_id")
     private PredicatePathExpression pathExpression;
-
 
     // === ЕДИНОЕ ХРАНЕНИЕ ЗНАЧЕНИЯ ===
     /* Значение для VALUE_CONSTANT и правой части сравнений
