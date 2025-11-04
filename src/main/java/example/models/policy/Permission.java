@@ -4,6 +4,7 @@ package example.models.policy;
 import com.yahoo.elide.annotation.Include;
 import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEntity;
+import example.models.predicate.PredicateDefinition;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -59,5 +60,8 @@ public class Permission {
     MetaAttribute attribute;
 
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "predicate_id", nullable = true)
+    PredicateDefinition predicateDefinition;
 
 }

@@ -1,5 +1,8 @@
 package example.user_checks;
 
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.PathBuilder;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.yahoo.elide.annotation.SecurityCheck;
 import com.yahoo.elide.core.security.ChangeSpec;
 import com.yahoo.elide.core.security.RequestScope;
@@ -9,82 +12,92 @@ import example.models.policy.Permission;
 import example.models.policy.QPermission;
 import example.models.policy.UserRole;
 import example.repo.PermissionRepository;
+import example.service.PredicateGeneratorService;
 import io.vavr.collection.Stream;
-import io.vavr.control.Option;
-import io.vavr.control.Try;
+import jakarta.persistence.EntityManager;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Optional;
 
-
+@Slf4j
 @SecurityCheck("RSMD")
 @Component
 public class PermissionCheck extends OperationCheck<Object> {
 
     @Autowired
     PermissionRepository permissionRepository;
+    @Autowired
+    PredicateGeneratorService predicateGeneratorService;
+    @Autowired
+    EntityManager entityManager;
 
     @Override
     public boolean ok(final Object object, final RequestScope requestScope, final Optional<ChangeSpec> optional) {
 
         ChangeSpec changeSpec = optional.get();
-        String entityName = changeSpec.getResource().getResourceType().getSimpleName();
+        String entityName = changeSpec.getResource().getResourceType().getName();
         Object attributeName = changeSpec.getFieldName();
         User user = requestScope.getUser();
-        UserRole userRole = UserRole.USER;
-        Iterable<Permission> permissions = permissionRepository.findAll(QPermission.permission.entity.name.eq(object.getClass().getName()));
+        UserRole userRole = UserRole.ADMIN;
+        Iterable<Permission> thisEntityPermissions = permissionRepository.findAll(QPermission.permission.entity.name.eq(entityName));
 
-        return checkPermissions(permissions, entityName, userRole, attributeName);
+        return checkPermissions(object, Stream.ofAll(thisEntityPermissions), userRole, attributeName);
     }
 
     private boolean checkPermissions(
-            final Iterable<Permission> permissions,
-            final String entityName,
+            final Object object,
+            final Stream<Permission> thisEntityPermissions,
             final UserRole userRole,
             final Object attributeName) {
-
-        // Ищем entity permission
-        Option<Permission> entityPermission = Stream.ofAll(permissions)
-                .find(permission ->
-                        Try.of(() -> permission.getEntity().getName().equals(entityName)).getOrElse(false)
-                );
-        // 1. Если есть entity permission
-        if (entityPermission.isDefined()) {
-            // 1.1 Но нет правильной роли - возвращаем false
-            if (entityPermission.get().getUserRoles() == null ||
-                    !entityPermission.get().getUserRoles().contains(userRole)) {
-                return false;
-            }
-
-            // 1.2 Есть правильная роль - проверяем attribute permission
-            Option<Permission> attributePermission = Stream.ofAll(permissions)
-                    .find(permission ->
-                            Try.of(() -> permission.getAttribute().getName().equals(attributeName)).getOrElse(false)
-                    );
-            // 2.1 Если есть attribute permission, но нет правильной роли - false
-            if (attributePermission.isDefined() &&
-                    (attributePermission.get().getUserRoles() == null ||
-                            !attributePermission.get().getUserRoles().contains(userRole))) {
-                return false;
-            }
-            // 2.2 Если есть attribute permission с правильной ролью - true
-            // 2.3 Если нет attribute permission - true
-            return true;
-        }
-        // 3. Если нет entity permission - проверяем только attribute permission
-        Option<Permission> attributePermission = Stream.ofAll(permissions)
-                .find(permission ->
-                        Try.of(() -> permission.getAttribute().getName().equals(attributeName)).getOrElse(false)
-                );
-        // 3.1 Если есть attribute permission, но нет правильной роли - false
-        if (attributePermission.isDefined() &&
-                (attributePermission.get().getUserRoles() == null ||
-                        !attributePermission.get().getUserRoles().contains(userRole))) {
+        if (thisEntityPermissions.isEmpty()) {
             return false;
         }
-        // 3.2 Если есть attribute permission с правильной ролью - true
-        // 3.3 Если нет attribute permission - true
-        return true;
+        Stream<Permission> thisAttributePermissions = thisEntityPermissions.filter(x -> x.getAttribute() == null || x.getAttribute().getName().equals(attributeName));
+        if (thisAttributePermissions.isEmpty()) {
+            return false;
+        }
+        Stream<Permission> roleSatisfiedPermissions = thisAttributePermissions.filter(x -> x.getUserRoles().contains(userRole));
+        if (roleSatisfiedPermissions.isEmpty()) {
+            return false;
+        }
+        Stream<Permission> forAllPredicatePermissions = roleSatisfiedPermissions.filter(x -> x.getPredicateDefinition() == null);
+        if (!forAllPredicatePermissions.isEmpty()) {
+            return true;
+        }
+        Stream<Permission> permissions = roleSatisfiedPermissions.filter(x -> x.getPredicateDefinition() != null)
+                .filter(x -> {
+                    BooleanExpression booleanExpression = predicateGeneratorService.generatePredicate(x.getPredicateDefinition());
+                    PathBuilder<?> entity = new PathBuilder<>(object.getClass(), "entity");
+                    JPAQuery<?> query = new JPAQuery<>(entityManager);
+
+                    Field field = null;
+                    Object value = null;
+                    try {
+                        field = object.getClass().getDeclaredField("id");
+                        field.setAccessible(true);
+                        value = field.get(object);
+                    } catch (NoSuchFieldException | IllegalAccessException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    BooleanExpression eqById = entity.getString("id").eq(value.toString());
+
+                    List<?> exists = query
+                            .from(entity)
+                            .where(booleanExpression.and(eqById)).fetch();
+                    return !exists.isEmpty();
+                });
+
+        if (permissions.isEmpty()) {
+            return false;
+        } else {
+            log.info("Удовлетворяющие permissions: " + permissions.map(Permission::getId).toJavaList());
+            return true;
+
+        }
     }
 }
