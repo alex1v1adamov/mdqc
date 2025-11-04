@@ -1,7 +1,11 @@
 package example;
 
 import com.cosium.spring.data.jpa.entity.graph.domain2.DynamicEntityGraph;
-import example.models.meta.*;
+import example.models.meta.AttributeCategory;
+import example.models.meta.AttributeType;
+import example.models.meta.BasicType;
+import example.models.meta.MetaAttribute;
+import example.models.meta.MetaEntity;
 import example.repo.MetaEntityRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManagerFactory;
@@ -78,11 +82,25 @@ public class SchemaValidator {
             }
         }
 
-        // Лишние MetaEntity без JPA сущности - это нормально, только логируем INFO
-        for (MetaEntity metaEntity : metaEntities) {
-            if (!jpaEntitiesMap.containsKey(metaEntity.getName())) {
-                logger.info("MetaEntity {} не имеет соответствующей JPA сущности (это нормально)", metaEntity.getName());
-            }
+        // Лишние MetaEntity без JPA сущности - это НЕ нормально, бросаем исключение
+        // Собираем все MetaEntity без соответствующих JPA сущностей
+        List<String> missingJpaEntities = io.vavr.collection.Stream.ofAll(metaEntities)
+                .filter(metaEntity -> !jpaEntitiesMap.containsKey(metaEntity.getName()))
+                .peek(metaEntity -> logger.info("MetaEntity {} не имеет соответствующей JPA сущности", metaEntity.getName()))
+                .map(MetaEntity::getName)
+                .toJavaList();
+
+        // Если есть несоответствия - бросаем исключение со всей информацией
+        if (!missingJpaEntities.isEmpty()) {
+            String errorMessage = io.vavr.collection.Stream.of(missingJpaEntities)
+                    .transform(stream -> String.format(
+                            "Обнаружены MetaEntity без соответствующих JPA сущностей (%d шт.): %s",
+                            stream.size(),
+                            stream.mkString(", ")
+                    ));
+
+            logger.error(errorMessage);
+            throw new IllegalStateException(errorMessage);
         }
 
         // Проверяем атрибуты только для существующих пар сущностей

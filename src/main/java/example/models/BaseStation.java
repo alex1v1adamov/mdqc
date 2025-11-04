@@ -7,6 +7,7 @@ package example.models;
 
 import com.yahoo.elide.annotation.Include;
 
+import com.yahoo.elide.annotation.UpdatePermission;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -15,7 +16,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-@Include(rootLevel = false, name = "baseStation")
+@UpdatePermission(expression = "RSMD")
+@Include(rootLevel = true, name = "baseStation")
 @Table(schema = "ri", name = "base_station")
 @Entity
 @Getter
