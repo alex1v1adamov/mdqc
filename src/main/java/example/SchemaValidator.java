@@ -210,9 +210,11 @@ public class SchemaValidator {
     }
 
     private boolean isCurrentlySupportedBasicType(Class<?> javaType) {
+
         return javaType == String.class ||
                 javaType == Boolean.class || javaType == boolean.class ||
-                javaType == Integer.class || javaType == int.class;
+                javaType == Integer.class || javaType == int.class ||
+                javaType.isEnum();
     }
 
     private BasicType determineBasicType(Class<?> javaType) {
@@ -222,6 +224,8 @@ public class SchemaValidator {
             return BasicType.BOOLEAN;
         } else if (javaType == Integer.class || javaType == int.class) {
             return BasicType.INTEGER;
+        } else if (javaType.isEnum()) {
+            return BasicType.ENUM;
         }
         return null;
     }

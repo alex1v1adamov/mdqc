@@ -10,6 +10,8 @@ import com.yahoo.elide.annotation.Include;
 import com.yahoo.elide.annotation.UpdatePermission;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -31,6 +33,10 @@ public class BaseStation {
 
     @ManyToOne
     private Site site = null;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    BsStatus bsStatus;
 
 
 }

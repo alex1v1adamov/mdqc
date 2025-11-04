@@ -85,6 +85,14 @@ public class MetaAttribute {
     private BasicType basicType;
 
     /**
+     * Ссылка на enum тип (для attributeCategory = ENUM)
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "meta_enum_id")
+    private MetaEnum metaEnum;
+
+
+    /**
      * тип для AttributeCategory.ENTITY
      */
     @ManyToOne(fetch = FetchType.LAZY)
