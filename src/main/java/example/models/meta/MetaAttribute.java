@@ -16,6 +16,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.Immutable;
 
 
@@ -35,6 +36,7 @@ import java.util.UUID;
 @Immutable
 @Getter
 @Setter
+@FieldNameConstants
 public class MetaAttribute {
 
     /**

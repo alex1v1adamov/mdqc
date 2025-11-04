@@ -11,6 +11,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.UUID;
 @Table(name = "meta_enum", schema = "meta")
 @Getter
 @Setter
+@FieldNameConstants
 public class MetaEnum {
 
     @Id
@@ -52,6 +54,5 @@ public class MetaEnum {
      * Все возможные значения этого enum'а
      */
     @OneToMany(mappedBy = "metaEnum", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("orderIndex ASC")
     private List<MetaEnumValue> values = new ArrayList<>();
 }

@@ -6,6 +6,8 @@ import example.models.meta.AttributeType;
 import example.models.meta.BasicType;
 import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEntity;
+import example.models.meta.MetaEnum;
+import example.models.meta.MetaEnumValue;
 import example.repo.MetaEntityRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManagerFactory;
@@ -51,6 +53,7 @@ public class SchemaValidator {
                 null
                 , DynamicEntityGraph.loading()
                         .addPath(MetaEntity.Fields.attributes)
+                        .addPath(MetaEntity.Fields.attributes + "."+MetaAttribute.Fields.metaEnum + "." + MetaEnum.Fields.values)
                         .build()
         );
 
@@ -143,12 +146,6 @@ public class SchemaValidator {
                 continue;
             }
 
-//            // Пропускаем служебные атрибуты
-//            if (isSystemAttribute(attributeName)) {
-//                metaAttributesMap.remove(attributeName);
-//                continue;
-//            }
-
             // Валидируем соответствие типа атрибута (это уже критично)
             validateAttributeType(jpaAttribute, metaAttribute, metaEntity.getName(), problems);
 
@@ -199,6 +196,47 @@ public class SchemaValidator {
                     ));
                 }
             }
+
+            // Дополнительная проверка для ENUM типов
+            if (jpaAttributeType.isEnum() && metaAttribute.getAttributeCategory() == AttributeCategory.BASIC) {
+                validateEnumValues(jpaAttributeType, metaAttribute, entityName, problems);
+            }
+        }
+    }
+
+    /**
+     * Проверяет соответствие значений enum между JPA-моделью и MetaEnum
+     */
+    private void validateEnumValues(Class<?> jpaEnumType, MetaAttribute metaAttribute,
+                                    String entityName, List<String> problems) {
+        if (metaAttribute.getMetaEnum() == null) {
+            problems.add(String.format(
+                    "Enum атрибут %s в сущности %s не имеет связанного MetaEnum",
+                    metaAttribute.getName(), entityName
+            ));
+            return;
+        }
+
+        // Получаем значения из JPA enum
+        Object[] jpaEnumValues = jpaEnumType.getEnumConstants();
+        List<String> jpaEnumValueNames = new ArrayList<>();
+        for (Object enumValue : jpaEnumValues) {
+            jpaEnumValueNames.add(((Enum<?>) enumValue).name());
+        }
+
+        // Получаем значения из MetaEnum
+        List<String> metaEnumValueNames = metaAttribute.getMetaEnum().getValues().stream()
+                .map(MetaEnumValue::getName)
+                .collect(Collectors.toList());
+
+        // Проверяем соответствие значений
+        if (jpaEnumValueNames.size() != metaEnumValueNames.size() ||
+                !jpaEnumValueNames.containsAll(metaEnumValueNames)) {
+            problems.add(String.format(
+                    "Несоответствие значений enum для атрибута %s в сущности %s: " +
+                            "JPA значения: %s, MetaEnum значения: %s",
+                    metaAttribute.getName(), entityName, jpaEnumValueNames, metaEnumValueNames
+            ));
         }
     }
 
@@ -210,7 +248,6 @@ public class SchemaValidator {
     }
 
     private boolean isCurrentlySupportedBasicType(Class<?> javaType) {
-
         return javaType == String.class ||
                 javaType == Boolean.class || javaType == boolean.class ||
                 javaType == Integer.class || javaType == int.class ||
