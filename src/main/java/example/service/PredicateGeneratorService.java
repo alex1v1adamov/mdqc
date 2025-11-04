@@ -8,13 +8,17 @@ import com.querydsl.core.types.dsl.PathBuilder;
 import example.models.meta.AttributeCategory;
 import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEntity;
+import example.models.meta.MetaEnum;
+import example.models.meta.MetaEnumValue;
 import example.models.predicate.OperatorType;
 import example.models.predicate.PredicateDefinition;
 import example.models.predicate.PredicateNode;
 import example.models.predicate.PredicateNodeValue;
 import example.models.predicate.PredicatePathExpression;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Method;
 import java.time.LocalDate;
 
 @Service
@@ -73,7 +77,7 @@ public class PredicateGeneratorService {
     private BooleanExpression buildComparisonPredicate(PredicateNode node, PathBuilder<?> entityPath) {
         // Для операторов IS_NULL и IS_NOT_NULL используем только meta_attribute
         if (node.getOperatorType() == OperatorType.IS_NULL || node.getOperatorType() == OperatorType.IS_NOT_NULL) {
-            Expression<?> attributeExpression = buildAttributeExpression(node.getMetaAttribute(), entityPath);
+            Expression<?> attributeExpression = buildAttributeExpression(node, entityPath);
             if (attributeExpression == null) return null;
 
             return node.getOperatorType() == OperatorType.IS_NULL
@@ -81,25 +85,73 @@ public class PredicateGeneratorService {
                     : Expressions.predicate(Ops.IS_NOT_NULL, attributeExpression);
         }
 
-        // Для остальных операторов сравнения используем левый и правый операнды
-        Expression<?> left = buildOperandExpression(node.getLeftOperand(), entityPath);
+        // Для остальных операторов сравнения
+        Expression<?> left = buildLeftOperandExpression(node, entityPath);
         if (left == null) return null;
 
+        Expression<?> right = buildRightOperandExpression(node, entityPath);
+        if (right == null) return null;
+
         return switch (node.getOperatorType()) {
-            case EQ, NE -> buildEqualityPredicate(node, left, entityPath);
+            case EQ -> Expressions.predicate(Ops.EQ, left, right);
+            case NE -> Expressions.predicate(Ops.NE, left, right);
+            case GT -> Expressions.predicate(Ops.GT, left, right);
+            case LT -> Expressions.predicate(Ops.LT, left, right);
+            case GOE -> Expressions.predicate(Ops.GOE, left, right);
+            case LOE -> Expressions.predicate(Ops.LOE, left, right);
+            case LIKE -> Expressions.predicate(Ops.LIKE, left, right);
+            case STARTS_WITH -> Expressions.predicate(Ops.STARTS_WITH, left, right);
+            case ENDS_WITH -> Expressions.predicate(Ops.ENDS_WITH, left, right);
+            case CONTAINS -> Expressions.predicate(Ops.STRING_CONTAINS, left, right);
             default -> throw new IllegalArgumentException("Unsupported comparison operator: " + node.getOperatorType());
         };
     }
 
-    private BooleanExpression buildEqualityPredicate(PredicateNode node, Expression<?> left, PathBuilder<?> entityPath) {
-        Expression<?> right = buildOperandExpression(node.getRightOperand(), entityPath);
-        if (right == null) return null;
+    private Expression<?> buildLeftOperandExpression(PredicateNode node, PathBuilder<?> entityPath) {
+        // Приоритет 1: прямой meta_attribute_id (новая структура)
+        if (node.getMetaAttribute() != null) {
+            return createTypedExpression(entityPath, node.getMetaAttribute());
+        }
 
-        Ops operator = node.getOperatorType() == OperatorType.EQ ? Ops.EQ : Ops.NE;
-        return Expressions.booleanOperation(operator, left, right);
+        // Приоритет 2: path_expression
+        if (node.getPathExpression() != null) {
+            return buildPathExpression(node, entityPath);
+        }
+
+        // Приоритет 3: left_operand (старая структура)
+        if (node.getLeftOperand() != null) {
+            return buildOperandExpression(node.getLeftOperand(), entityPath);
+        }
+
+        throw new IllegalArgumentException("COMPARISON_OPERATOR must have either metaAttribute, pathExpression or leftOperand");
     }
 
-    // Новый метод для построения выражений операндов (без рекурсии для COMPARISON_OPERATOR)
+    private Expression<?> buildRightOperandExpression(PredicateNode node, PathBuilder<?> entityPath) {
+        if (node.getRightOperand() != null) {
+            return buildOperandExpression(node.getRightOperand(), entityPath);
+        }
+        throw new IllegalArgumentException("COMPARISON_OPERATOR must have rightOperand");
+    }
+
+    private Expression<?> buildAttributeExpression(PredicateNode node, PathBuilder<?> entityPath) {
+        // Приоритет 1: прямой meta_attribute_id
+        if (node.getMetaAttribute() != null) {
+            return createTypedExpression(entityPath, node.getMetaAttribute());
+        }
+
+        // Приоритет 2: path_expression
+        if (node.getPathExpression() != null) {
+            return buildPathExpression(node, entityPath);
+        }
+
+        // Приоритет 3: left_operand (старая структура)
+        if (node.getLeftOperand() != null) {
+            return buildOperandExpression(node.getLeftOperand(), entityPath);
+        }
+
+        return null;
+    }
+
     private Expression<?> buildOperandExpression(PredicateNode node, PathBuilder<?> entityPath) {
         if (node == null) return null;
 
@@ -107,35 +159,11 @@ public class PredicateGeneratorService {
             case VALUE_CONSTANT -> buildConstantExpression(node);
             case PATH_EXPRESSION -> buildPathExpression(node, entityPath);
             case COMPARISON_OPERATOR -> {
-                // Для COMPARISON_OPERATOR в операндах - это атрибут, а не предикат
-                // Создаем выражение атрибута из meta_attribute
-                yield buildAttributeExpression(node.getMetaAttribute(), entityPath);
+                // Для COMPARISON_OPERATOR в операндах - это атрибут
+                yield buildAttributeExpression(node, entityPath);
             }
             default -> throw new IllegalArgumentException("Unsupported operand node type: " + node.getNodeType());
         };
-    }
-
-    // Старый метод buildExpression оставляем только для внутреннего использования
-    private Expression<?> buildExpression(PredicateNode node, PathBuilder<?> entityPath) {
-        if (node == null) return null;
-
-        return switch (node.getNodeType()) {
-            case VALUE_CONSTANT -> buildConstantExpression(node);
-            case PATH_EXPRESSION -> buildPathExpression(node, entityPath);
-            case COMPARISON_OPERATOR -> {
-                // Для выражений, которые используют COMPARISON_OPERATOR как часть большего выражения
-                // Создаем BooleanExpression и преобразуем его в Expression
-                BooleanExpression booleanExpr = buildComparisonPredicate(node, entityPath);
-                yield booleanExpr != null ? Expressions.asBoolean(booleanExpr) : null;
-            }
-            default -> throw new IllegalArgumentException("Unsupported expression node type: " + node.getNodeType());
-        };
-    }
-
-    // Вынесен в отдельный метод для использования в COMPARISON_OPERATOR
-    private Expression<?> buildAttributeExpression(MetaAttribute metaAttribute, PathBuilder<?> entityPath) {
-        if (metaAttribute == null) return null;
-        return createTypedExpression(entityPath, metaAttribute);
     }
 
     private Expression<?> buildPathExpression(PredicateNode node, PathBuilder<?> entityPath) {
@@ -216,6 +244,7 @@ public class PredicateGeneratorService {
         }
     }
 
+    @SneakyThrows
     private Expression<?> buildConstantExpression(PredicateNode node) {
         PredicateNodeValue value = node.getValue();
         if (value == null) return null;
@@ -229,7 +258,14 @@ public class PredicateGeneratorService {
             case BOOLEAN -> Expressions.constant(valueObj);
             case INTEGER -> Expressions.constant(valueObj);
             case DATE -> Expressions.constant(valueObj);
-            case ENUM -> Expressions.constant(valueObj.toString());
+            case ENUM -> {
+                Class<?> enumClass = Class.forName(((MetaEnumValue) valueObj).getMetaEnum().getClassName());
+                Method valueOfMethod = Enum.class.getMethod("valueOf", Class.class, String.class);
+                // Invoke the valueOf method to get the enum constant
+                // The first argument is null because valueOf is a static method
+                Object invoke = valueOfMethod.invoke(null, enumClass, ((MetaEnumValue) valueObj).getName());
+                yield Expressions.constant(invoke);
+            }
         };
     }
 

@@ -1,6 +1,7 @@
 package example.models.predicate;
 
 import example.models.meta.BasicType;
+import example.models.meta.MetaEnumValue;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -42,8 +43,9 @@ public class PredicateNodeValue {
     @Column(name = "timestamp_value")
     private LocalDateTime timestampValue;
 
-    @Column(name = "enum_value")
-    private String enumValue; // храним как строку
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "enum_value_id")
+    private MetaEnumValue enumValue; // храним как строку
 
     /* Тип значения - определяет, какое поле использовать
      */
@@ -72,7 +74,7 @@ public class PredicateNodeValue {
             case BOOLEAN -> this.booleanValue = (Boolean) value;
             case INTEGER -> this.integerValue = (Integer) value;
             case DATE -> this.dateValue = (LocalDate) value;
-            case ENUM -> this.enumValue = value.toString();
+            case ENUM -> this.enumValue = (MetaEnumValue) value;
         }
     }
 
