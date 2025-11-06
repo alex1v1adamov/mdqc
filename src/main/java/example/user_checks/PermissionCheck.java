@@ -38,7 +38,7 @@ public class PermissionCheck extends OperationCheck<Object> {
     @Override
     public boolean ok(final Object object, final RequestScope requestScope, final Optional<ChangeSpec> optional) {
 
-         ChangeSpec changeSpec = optional.get();
+        ChangeSpec changeSpec = optional.get();
         String entityName = changeSpec.getResource().getResourceType().getName();
         Object attributeName = changeSpec.getFieldName();
         User user = requestScope.getUser();

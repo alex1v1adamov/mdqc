@@ -53,7 +53,7 @@ public class SchemaValidator {
                 null
                 , DynamicEntityGraph.loading()
                         .addPath(MetaEntity.Fields.attributes)
-                        .addPath(MetaEntity.Fields.attributes + "."+MetaAttribute.Fields.metaEnum + "." + MetaEnum.Fields.values)
+                        .addPath(MetaEntity.Fields.attributes + "." + MetaAttribute.Fields.metaEnum + "." + MetaEnum.Fields.values)
                         .build()
         );
 

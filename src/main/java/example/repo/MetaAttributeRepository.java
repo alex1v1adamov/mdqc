@@ -10,6 +10,6 @@ import java.util.UUID;
 
 @Repository
 public interface MetaAttributeRepository extends JpaRepository<MetaAttribute, UUID>, JpaSpecificationExecutor<MetaAttribute> {
-    
+
 
 }

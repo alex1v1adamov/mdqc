@@ -11,15 +11,13 @@ import com.yahoo.elide.annotation.LifeCycleHookBinding;
 import com.yahoo.elide.annotation.UpdatePermission;
 import com.yahoo.elide.graphql.subscriptions.annotations.Subscription;
 import com.yahoo.elide.graphql.subscriptions.annotations.SubscriptionField;
-
 import example.lifecycle_hooks.TestHook;
 import jakarta.persistence.Column;
-import jakarta.persistence.Table;
-import lombok.Data;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 

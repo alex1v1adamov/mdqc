@@ -1,7 +1,6 @@
 package example.repo;
 
 import com.cosium.spring.data.jpa.entity.graph.repository.EntityGraphJpaSpecificationExecutor;
-import example.models.meta.MetaEntity;
 import example.models.policy.Permission;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;

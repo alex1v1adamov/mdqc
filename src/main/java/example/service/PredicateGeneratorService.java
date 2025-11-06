@@ -8,7 +8,6 @@ import com.querydsl.core.types.dsl.PathBuilder;
 import example.models.meta.AttributeCategory;
 import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEntity;
-import example.models.meta.MetaEnum;
 import example.models.meta.MetaEnumValue;
 import example.models.predicate.OperatorType;
 import example.models.predicate.PredicateDefinition;

@@ -6,16 +6,15 @@
 package example;
 
 import com.cosium.spring.data.jpa.entity.graph.repository.support.EntityGraphJpaRepositoryFactoryBean;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ImportRuntimeHints;
-
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.info.Info;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.security.SecurityScheme;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 /**
@@ -32,7 +31,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         type = SecuritySchemeType.HTTP,
         bearerFormat = "JWT",
         scheme = "bearer"
-    )
+)
 public class App {
     public static void main(String[] args) throws Exception {
         SpringApplication.run(App.class, args);

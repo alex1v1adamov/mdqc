@@ -19,7 +19,6 @@ import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.Immutable;
 
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -58,7 +57,6 @@ public class MetaAttribute {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "entity_id", nullable = false)
     private MetaEntity entity;
-
 
 
     /**
@@ -121,7 +119,6 @@ public class MetaAttribute {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_attribute_id")
     private MetaAttribute relatedAttribute;
-
 
 
     /**

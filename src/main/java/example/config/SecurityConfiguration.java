@@ -6,11 +6,6 @@
 
 package example.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
-import java.time.Duration;
-import java.util.List;
-
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +15,11 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.time.Duration;
+import java.util.List;
+
+import static org.springframework.security.config.Customizer.withDefaults;
 
 /**
  * Disables security for testing.
@@ -32,9 +32,9 @@ public class SecurityConfiguration {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(withDefaults())
-            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
-            .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests.anyRequest().permitAll())
-            .csrf(csrf -> csrf.disable());
+                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
+                .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests.anyRequest().permitAll())
+                .csrf(csrf -> csrf.disable());
         return http.build();
     }
 
@@ -46,7 +46,7 @@ public class SecurityConfiguration {
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setMaxAge(Duration.ofHours(1));
         configuration.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource(); 
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

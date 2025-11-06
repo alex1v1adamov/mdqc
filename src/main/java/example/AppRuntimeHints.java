@@ -1,5 +1,11 @@
 package example;
 
+import io.netty.buffer.AbstractByteBufAllocator;
+import io.netty.buffer.AbstractReferenceCountedByteBuf;
+import liquibase.database.LiquibaseTableNamesFactory;
+import liquibase.parser.SqlParserFactory;
+import liquibase.report.ShowSummaryGeneratorFactory;
+import liquibase.ui.LoggerUIService;
 import org.apache.activemq.artemis.api.core.client.loadbalance.RoundRobinConnectionLoadBalancingPolicy;
 import org.apache.activemq.artemis.core.client.ActiveMQClientLogger_impl;
 import org.apache.activemq.artemis.core.client.ActiveMQClientMessageBundle_impl;
@@ -33,13 +39,6 @@ import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
-
-import io.netty.buffer.AbstractByteBufAllocator;
-import io.netty.buffer.AbstractReferenceCountedByteBuf;
-import liquibase.database.LiquibaseTableNamesFactory;
-import liquibase.parser.SqlParserFactory;
-import liquibase.report.ShowSummaryGeneratorFactory;
-import liquibase.ui.LoggerUIService;
 
 public class AppRuntimeHints implements RuntimeHintsRegistrar {
     @Override
@@ -94,7 +93,7 @@ public class AppRuntimeHints implements RuntimeHintsRegistrar {
                 MemberCategory.DECLARED_FIELDS);
 
         /*
-         * Spring Framework springframework.jms.connection.SingleConnectionFactory 
+         * Spring Framework springframework.jms.connection.SingleConnectionFactory
          */
         hints.proxies().registerJdkProxy(jakarta.jms.Connection.class, jakarta.jms.QueueConnection.class,
                 jakarta.jms.TopicConnection.class);
@@ -127,11 +126,11 @@ public class AppRuntimeHints implements RuntimeHintsRegistrar {
         hints.reflection().registerType(PartialByteArrayMessageSink.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
 
         /*
-         * @see https://github.com/oracle/graalvm-reachability-metadata/pull/495/files 
+         * @see https://github.com/oracle/graalvm-reachability-metadata/pull/495/files
          */
         hints.reflection().registerType(ClassMatcher.ByPackageOrName.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
         hints.reflection().registerType(ClassMatcher.ByLocationOrModule.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        
+
         /*
          * Liquibase
          * @see https://github.com/oracle/graalvm-reachability-metadata/issues/431

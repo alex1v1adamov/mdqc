@@ -32,14 +32,6 @@ import java.util.UUID;
 @Setter
 public class Permission {
 
-    /**
-     * Уникальный идентификатор сущности
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
-
     @Enumerated(EnumType.STRING)
     @ElementCollection
     @CollectionTable(
@@ -49,19 +41,21 @@ public class Permission {
     )
     @Column(name = "user_role")
     Set<UserRole> userRoles = new HashSet<>();
-
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "entity_id", nullable = false)
     MetaEntity entity;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "attribute_id", nullable = false)
     MetaAttribute attribute;
-
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "predicate_id", nullable = true)
     PredicateDefinition predicateDefinition;
+    /**
+     * Уникальный идентификатор сущности
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
 }

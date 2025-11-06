@@ -14,6 +14,6 @@ import java.util.UUID;
 public interface SIteRepository
         extends JpaRepository<MetaAttribute, UUID>, JpaSpecificationExecutor<Site>,
         QuerydslPredicateExecutor<Site> {
-    
+
 
 }
