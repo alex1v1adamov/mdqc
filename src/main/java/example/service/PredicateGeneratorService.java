@@ -259,6 +259,7 @@ public class PredicateGeneratorService {
             case INTEGER -> Expressions.constant(valueObj);
             case DATE -> Expressions.constant(valueObj);
             case ENUM -> {
+
                 Class<?> enumClass = Class.forName(((MetaEnumValue) valueObj).getMetaEnum().getClassName());
                 Method valueOfMethod = Enum.class.getMethod("valueOf", Class.class, String.class);
                 // Invoke the valueOf method to get the enum constant

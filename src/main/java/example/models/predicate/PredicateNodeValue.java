@@ -24,6 +24,13 @@ public class PredicateNodeValue {
     private UUID id;
 
     // === ТИПОБЕЗОПАСНЫЕ ПОЛЯ ===
+    /**
+     * ПРАВИЛА ДЛЯ ЗНАЧЕНИЙ:
+     * - Заполняется ТОЛЬКО ОДНО поле в зависимости от valueType
+     * - Все остальные поля должны быть null
+     * - Для ENUM используется enumValue, stringValue = null
+     * - Тип значения должен соответствовать типу атрибута в сравнении
+     */
 
     @Column(name = "string_value")
     private String stringValue;
@@ -43,11 +50,24 @@ public class PredicateNodeValue {
     @Column(name = "timestamp_value")
     private LocalDateTime timestampValue;
 
+    /**
+     * Значение перечисления
+     * ПРАВИЛА:
+     * - Используется ТОЛЬКО когда valueType = ENUM
+     * - metaEnumValue.metaEnum должен соответствовать metaAttribute.metaEnum
+     * - Запрещено для других valueType
+     */
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "enum_value_id")
-    private MetaEnumValue enumValue; // храним как строку
+    private MetaEnumValue enumValue;
 
-    /* Тип значения - определяет, какое поле использовать
+    /**
+     * Тип значения
+     * ПРАВИЛА:
+     * - Обязательное поле
+     * - Определяет, какое из полей значения активно
+     * - Должен соответствовать basicType сравниваемого атрибута
+     * - Для ENUM должен совпадать с metaAttribute.basicType
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "value_type", nullable = false)

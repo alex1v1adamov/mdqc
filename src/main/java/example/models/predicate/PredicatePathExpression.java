@@ -34,16 +34,26 @@ public class PredicatePathExpression {
     @Column(name = "id", updatable = false, nullable = false)
     private UUID id;
 
-    /* Корневой атрибут (начало пути)
-     * Например, для site.isResearch - это атрибут "site" в BaseStation
+    /**
+     * Корневой атрибут (начало пути)
+     * ПРАВИЛА:
+     * - Обязательное поле
+     * - attributeCategory должен быть ENTITY
+     * - Должен принадлежать той же сущности, что и корень предиката
+     * - Тип: всегда MetaAttribute с category = ENTITY
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "root_attribute_id", nullable = false)
     private MetaAttribute rootAttribute;
 
-    /* Цепочка атрибутов для навигации
-     * Порядок определяется порядком в списке через @OrderColumn
-     * Например, для site.isResearch: [isResearch]
+    /**
+     * Цепочка атрибутов для навигации
+     * ПРАВИЛА:
+     * - Может быть пустым (путь из одного сегмента)
+     * - Все атрибуты кроме последнего должны иметь category = ENTITY
+     * - Последний атрибут должен иметь category = BASIC
+     * - Порядок определяет последовательность навигации
+     * - Все атрибуты должны быть совместимы по типам
      */
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinTable(
@@ -55,8 +65,13 @@ public class PredicatePathExpression {
     @OrderColumn(name = "attribute_order")
     private List<MetaAttribute> pathAttributes = new ArrayList<>();
 
-    /* Конечный атрибут (последний в цепочке)
-     * Вычисляется автоматически, но хранится для удобства
+    /**
+     * Конечный атрибут (последний в цепочке)
+     * ПРАВИЛА:
+     * - Вычисляемое поле, должно соответствовать последнему pathAttributes
+     * - Если pathAttributes пуст, то равен rootAttribute
+     * - Всегда должен иметь category = BASIC (конечный атрибут)
+     * - Используется для оптимизации запросов
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_attribute_id")

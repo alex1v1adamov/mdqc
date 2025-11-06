@@ -1,0 +1,24 @@
+Основные правила валидации:
+Для COMPARISON_OPERATOR:
+
+    Обязателен operatorType, leftOperand или metaAttribute/pathExpression
+
+    Для бинарных операторов обязателен rightOperand или inValues
+
+    Для унарных (IS_NULL, IS_NOT_NULL) rightOperand = null
+
+Для LOGICAL_OPERATOR:
+
+    Обязательны operatorType, leftOperand
+
+    Для AND/OR обязателен rightOperand
+
+    Для NOT rightOperand = null
+
+Типовая совместимость:
+
+    Тип значения должен соответствовать типу атрибута
+
+    Все элементы в inValues должны быть одного типа
+
+    Пути навигации должны заканчиваться BASIC-атрибутом

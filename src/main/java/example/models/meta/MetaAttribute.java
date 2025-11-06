@@ -20,9 +20,7 @@ import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.Immutable;
 
 
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -104,14 +102,21 @@ public class MetaAttribute {
 
     /**
      * Флаг bidirectional связи
-     * true - атрибут является частью двусторонней связи
+     * ПРАВИЛА:
+     * - true только для атрибутов с attributeCategory = ENTITY
+     * - Если true, то relatedAttribute обязателен
+     * - Обратная связь должна быть симметричной
      */
     @Column(name = "is_bidirectional", nullable = false)
     private Boolean isBidirectional = false;
 
     /**
      * Связанный атрибут в bidirectional связи
-     * Указывает на атрибут в связанной сущности, который ссылается обратно на этот атрибут
+     * ПРАВИЛА:
+     * - Обязательно если isBidirectional = true
+     * - Запрещено для атрибутов с attributeCategory = BASIC
+     * - relatedAttribute.isBidirectional должен быть true
+     * - relatedAttribute.relatedAttribute должен ссылаться обратно на этот атрибут
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "related_attribute_id")

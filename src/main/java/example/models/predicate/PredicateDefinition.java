@@ -1,7 +1,6 @@
 package example.models.predicate;
 
 import example.models.meta.MetaEntity;
-import example.models.meta.MetaAttribute;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
