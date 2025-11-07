@@ -18,6 +18,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 /* Универсальное хранилище значений для предикатов
@@ -55,7 +56,7 @@ public class PredicateNodeValue {
     private Long longValue;
 
     @Column(name = "date_value")
-    private LocalDate dateValue;
+    private OffsetDateTime offsetDateTimeValue;
 
     @Column(name = "timestamp_value")
     private LocalDateTime timestampValue;
@@ -93,7 +94,7 @@ public class PredicateNodeValue {
         this.booleanValue = null;
         this.integerValue = null;
         this.longValue = null;
-        this.dateValue = null;
+        this.offsetDateTimeValue = null;
         this.timestampValue = null;
         this.enumValue = null;
 
@@ -103,7 +104,7 @@ public class PredicateNodeValue {
             case STRING -> this.stringValue = (String) value;
             case BOOLEAN -> this.booleanValue = (Boolean) value;
             case INTEGER -> this.integerValue = (Integer) value;
-            case DATE -> this.dateValue = (LocalDate) value;
+            case OFFSET_DATE_TIME -> this.offsetDateTimeValue = (OffsetDateTime) value;
             case ENUM -> this.enumValue = (MetaEnumValue) value;
         }
     }
@@ -115,7 +116,7 @@ public class PredicateNodeValue {
             case STRING -> stringValue;
             case BOOLEAN -> booleanValue;
             case INTEGER -> integerValue;
-            case DATE -> dateValue;
+            case OFFSET_DATE_TIME -> offsetDateTimeValue;
             case ENUM -> enumValue;
         };
     }
