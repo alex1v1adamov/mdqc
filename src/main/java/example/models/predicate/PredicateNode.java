@@ -66,7 +66,6 @@ public class PredicateNode {
      * - Для COMPARISON_OPERATOR: атрибут для сравнения
      * - Для PATH_EXPRESSION: корневой атрибут (если путь состоит из одного сегмента)
      * - Запрещено для LOGICAL_OPERATOR и VALUE_CONSTANT
-     * - Приоритет: metaAttribute > pathExpression
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "meta_attribute_id")

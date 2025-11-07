@@ -5,7 +5,7 @@ package example.models.meta;
  */
 public enum AttributeCategory {
     /**
-     * Простой тип: String, Integer, Long, Boolean, LocalDate, etc.
+     * Простой тип: String, Integer, Long, Boolean, OffsetDateTime, etc.
      * Соответствует @Basic в JPA
      */
     BASIC,
