@@ -3,10 +3,16 @@ package example.controllers;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQuery;
+import example.models.meta.MetaEntity;
 import example.models.predicate.PredicateDefinition;
+import example.repo.MetaEntityRepository;
 import example.repo.PredicateDefinitionRepository;
+import example.service.MetaEntityValidationService;
+import example.service.PredicateValidationService;
 import example.service.PredicateGeneratorService;
 import example.service.PredicateStringConverter;
+
+import example.service.ValidationResult;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -23,8 +29,11 @@ public class PredicateController {
 
     private final PredicateStringConverter predicateConverter;
     private final PredicateDefinitionRepository predicateRepository;
+    private final MetaEntityRepository metaEntityRepository;
     private final EntityManager entityManager;
     private final PredicateGeneratorService predicateGeneratorService;
+    private final PredicateValidationService metaDataValidationService;
+    private final MetaEntityValidationService metaEntityValidationService;
 
 
     @SneakyThrows
@@ -34,6 +43,22 @@ public class PredicateController {
                 .orElseThrow(() -> new RuntimeException("Predicate not found"));
         predicateRepository.findAll();
         return predicateConverter.convertToString(predicate);
+    }
+
+    @SneakyThrows
+    @GetMapping("/predicate/{id}/validate")
+    public ValidationResult validatePredicate(@PathVariable UUID id) {
+        PredicateDefinition predicate = predicateRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Predicate not found"));
+        return metaDataValidationService.validate(predicate);
+    }
+
+    @SneakyThrows
+    @GetMapping("/meta-entity/{id}/validate")
+    public ValidationResult validateMetaEntity(@PathVariable UUID id) {
+        MetaEntity predicate = metaEntityRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("MetaEntity not found"));
+        return metaEntityValidationService.validate(predicate);
     }
 
     @SneakyThrows
