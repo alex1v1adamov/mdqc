@@ -6,9 +6,13 @@
 package example.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.yahoo.elide.annotation.Include;
 import com.yahoo.elide.annotation.LifeCycleHookBinding;
 import com.yahoo.elide.annotation.UpdatePermission;
+import com.yahoo.elide.core.filter.Operator;
+import com.yahoo.elide.datastores.jpql.annotations.JPQLFilterFragment;
 import com.yahoo.elide.graphql.subscriptions.annotations.Subscription;
 import com.yahoo.elide.graphql.subscriptions.annotations.SubscriptionField;
 import example.lifecycle_hooks.TestHook;
@@ -20,6 +24,10 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.Point;
+import org.n52.jackson.datatype.jts.GeometryDeserializer;
+import org.n52.jackson.datatype.jts.GeometrySerializer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,4 +60,13 @@ public class Site {
     @OneToMany(mappedBy = "site")
     @JsonIgnore
     private List<BaseStation> baseStations = new ArrayList<>();
+
+
+//        @JPQLFilterFragment(
+//                operator = Operator.NOTEMPTY ,  // Repurpose this operator
+//                generator = WithinRadiusGenerator.class
+//        )
+//
+
+    Point geometry;
 }
