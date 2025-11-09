@@ -10,6 +10,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
@@ -18,13 +21,9 @@ import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Immutable;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-
 /**
- * Мета-описание бизнес-сущности
- * Соответствует JPA Entity классу и используется для сравнения с Jakarta Metamodel
+ * Мета-описание бизнес-сущности Соответствует JPA Entity классу и используется для сравнения с
+ * Jakarta Metamodel
  */
 @Entity
 @Include
@@ -35,39 +34,31 @@ import java.util.UUID;
 @FieldNameConstants
 public class MetaEntity {
 
-    /**
-     * Уникальный идентификатор сущности
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+  /** Уникальный идентификатор сущности */
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "id", updatable = false, nullable = false)
+  private UUID id;
 
-    /**
-     * Полное имя класса сущности (например "com.example.models.User")
-     */
-    @Column(name = "name", nullable = false)
-    private String name;
+  /** Полное имя класса сущности (например "com.example.models.User") */
+  @Column(name = "name", nullable = false)
+  private String name;
 
-//    /**
-//     * Короткое имя сущности (например "User")
-//     */
-//    @Column(name = "simple_name", nullable = false)
-//    private String simpleName;
+  //    /**
+  //     * Короткое имя сущности (например "User")
+  //     */
+  //    @Column(name = "simple_name", nullable = false)
+  //    private String simpleName;
 
-    /**
-     * Все атрибуты (поля) данной сущности
-     */
-    @OneToMany(mappedBy = "entity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
-    @BatchSize(size = 50)
-    private Set<MetaAttribute> attributes = new HashSet<>();
+  /** Все атрибуты (поля) данной сущности */
+  @OneToMany(mappedBy = "entity", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 50)
+  private Set<MetaAttribute> attributes = new HashSet<>();
 
-    /**
-     * другие поля типа этой сущности
-     */
-    @OneToMany(mappedBy = "attributeEntityType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @Fetch(FetchMode.SUBSELECT)
-    @BatchSize(size = 50)
-    private Set<MetaAttribute> entityAttributes = new HashSet<>();
+  /** другие поля типа этой сущности */
+  @OneToMany(mappedBy = "attributeEntityType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 50)
+  private Set<MetaAttribute> entityAttributes = new HashSet<>();
 }

@@ -5,14 +5,13 @@
  */
 package example.models;
 
+import static com.yahoo.elide.annotation.LifeCycleHookBinding.Operation.UPDATE;
+import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.PRECOMMIT;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.yahoo.elide.annotation.Include;
 import com.yahoo.elide.annotation.LifeCycleHookBinding;
 import com.yahoo.elide.annotation.UpdatePermission;
-import com.yahoo.elide.core.filter.Operator;
-import com.yahoo.elide.datastores.jpql.annotations.JPQLFilterFragment;
 import com.yahoo.elide.graphql.subscriptions.annotations.Subscription;
 import com.yahoo.elide.graphql.subscriptions.annotations.SubscriptionField;
 import example.lifecycle_hooks.TestHook;
@@ -21,19 +20,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
-import org.n52.jackson.datatype.jts.GeometryDeserializer;
-import org.n52.jackson.datatype.jts.GeometrySerializer;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static com.yahoo.elide.annotation.LifeCycleHookBinding.Operation.UPDATE;
-import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.PRECOMMIT;
 
 @Include
 @Table(schema = "ri")
@@ -45,28 +37,26 @@ import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.P
 @Getter
 @Setter
 public class Site {
-    @Id
-    private String id = "";
+  @Id private String id = "";
 
-    @SubscriptionField
-    @Column(name = "site_name")
-    private String siteName = "";
+  @SubscriptionField
+  @Column(name = "site_name")
+  private String siteName = "";
 
-    @SubscriptionField
-    @Column(name = "is_research")
-    private Boolean isResearch;
+  @SubscriptionField
+  @Column(name = "is_research")
+  private Boolean isResearch;
 
-    @SubscriptionField
-    @OneToMany(mappedBy = "site")
-    @JsonIgnore
-    private List<BaseStation> baseStations = new ArrayList<>();
+  @SubscriptionField
+  @OneToMany(mappedBy = "site")
+  @JsonIgnore
+  private List<BaseStation> baseStations = new ArrayList<>();
 
+  //        @JPQLFilterFragment(
+  //                operator = Operator.NOTEMPTY ,  // Repurpose this operator
+  //                generator = WithinRadiusGenerator.class
+  //        )
+  //
 
-//        @JPQLFilterFragment(
-//                operator = Operator.NOTEMPTY ,  // Repurpose this operator
-//                generator = WithinRadiusGenerator.class
-//        )
-//
-
-    Point geometry;
+  Point geometry;
 }

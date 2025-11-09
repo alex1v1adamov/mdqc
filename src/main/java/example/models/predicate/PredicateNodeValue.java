@@ -13,13 +13,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /* Универсальное хранилище значений для предикатов
  */
@@ -29,95 +27,87 @@ import java.util.UUID;
 @Setter
 public class PredicateNodeValue {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "id", updatable = false, nullable = false)
+  private UUID id;
 
-    // === ТИПОБЕЗОПАСНЫЕ ПОЛЯ ===
-    /**
-     * ПРАВИЛА ДЛЯ ЗНАЧЕНИЙ:
-     * - Заполняется ТОЛЬКО ОДНО поле в зависимости от valueType
-     * - Все остальные поля должны быть null
-     * - Для ENUM используется enumValue, stringValue = null
-     * - Тип значения должен соответствовать типу атрибута в сравнении
-     */
+  // === ТИПОБЕЗОПАСНЫЕ ПОЛЯ ===
+  /**
+   * ПРАВИЛА ДЛЯ ЗНАЧЕНИЙ: - Заполняется ТОЛЬКО ОДНО поле в зависимости от valueType - Все остальные
+   * поля должны быть null - Для ENUM используется enumValue, stringValue = null - Тип значения
+   * должен соответствовать типу атрибута в сравнении
+   */
+  @Column(name = "string_value")
+  private String stringValue;
 
-    @Column(name = "string_value")
-    private String stringValue;
+  @Column(name = "boolean_value")
+  private Boolean booleanValue;
 
-    @Column(name = "boolean_value")
-    private Boolean booleanValue;
+  @Column(name = "integer_value")
+  private Integer integerValue;
 
-    @Column(name = "integer_value")
-    private Integer integerValue;
+  @Column(name = "long_value")
+  private Long longValue;
 
-    @Column(name = "long_value")
-    private Long longValue;
+  @Column(name = "date_value")
+  private OffsetDateTime offsetDateTimeValue;
 
-    @Column(name = "date_value")
-    private OffsetDateTime offsetDateTimeValue;
+  @Column(name = "timestamp_value")
+  private LocalDateTime timestampValue;
 
-    @Column(name = "timestamp_value")
-    private LocalDateTime timestampValue;
+  /**
+   * Значение перечисления ПРАВИЛА: - Используется ТОЛЬКО когда valueType = ENUM -
+   * metaEnumValue.metaEnum должен соответствовать metaAttribute.metaEnum - Запрещено для других
+   * valueType
+   */
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "enum_value_id")
+  private MetaEnumValue enumValue;
 
-    /**
-     * Значение перечисления
-     * ПРАВИЛА:
-     * - Используется ТОЛЬКО когда valueType = ENUM
-     * - metaEnumValue.metaEnum должен соответствовать metaAttribute.metaEnum
-     * - Запрещено для других valueType
-     */
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "enum_value_id")
-    private MetaEnumValue enumValue;
+  /**
+   * Тип значения ПРАВИЛА: - Обязательное поле - Определяет, какое из полей значения активно -
+   * Должен соответствовать basicType сравниваемого атрибута - Для ENUM должен совпадать с
+   * metaAttribute.basicType
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "value_type", nullable = false)
+  private BasicType valueType;
 
-    /**
-     * Тип значения
-     * ПРАВИЛА:
-     * - Обязательное поле
-     * - Определяет, какое из полей значения активно
-     * - Должен соответствовать basicType сравниваемого атрибута
-     * - Для ENUM должен совпадать с metaAttribute.basicType
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "value_type", nullable = false)
-    private BasicType valueType;
+  // === МЕТОДЫ ДЛЯ РАБОТЫ СО ЗНАЧЕНИЯМИ ===
 
-    // === МЕТОДЫ ДЛЯ РАБОТЫ СО ЗНАЧЕНИЯМИ ===
+  public void setValue(Object value, BasicType type) {
+    this.valueType = type;
 
-    public void setValue(Object value, BasicType type) {
-        this.valueType = type;
+    // Очищаем все поля перед установкой нового значения
+    this.stringValue = null;
+    this.booleanValue = null;
+    this.integerValue = null;
+    this.longValue = null;
+    this.offsetDateTimeValue = null;
+    this.timestampValue = null;
+    this.enumValue = null;
 
-        // Очищаем все поля перед установкой нового значения
-        this.stringValue = null;
-        this.booleanValue = null;
-        this.integerValue = null;
-        this.longValue = null;
-        this.offsetDateTimeValue = null;
-        this.timestampValue = null;
-        this.enumValue = null;
+    if (value == null) return;
 
-        if (value == null) return;
-
-        switch (type) {
-            case STRING -> this.stringValue = (String) value;
-            case BOOLEAN -> this.booleanValue = (Boolean) value;
-            case INTEGER -> this.integerValue = (Integer) value;
-            case OFFSET_DATE_TIME -> this.offsetDateTimeValue = (OffsetDateTime) value;
-            case ENUM -> this.enumValue = (MetaEnumValue) value;
-        }
+    switch (type) {
+      case STRING -> this.stringValue = (String) value;
+      case BOOLEAN -> this.booleanValue = (Boolean) value;
+      case INTEGER -> this.integerValue = (Integer) value;
+      case OFFSET_DATE_TIME -> this.offsetDateTimeValue = (OffsetDateTime) value;
+      case ENUM -> this.enumValue = (MetaEnumValue) value;
     }
+  }
 
-    public Object getValue() {
-        if (valueType == null) return null;
+  public Object getValue() {
+    if (valueType == null) return null;
 
-        return switch (valueType) {
-            case STRING -> stringValue;
-            case BOOLEAN -> booleanValue;
-            case INTEGER -> integerValue;
-            case OFFSET_DATE_TIME -> offsetDateTimeValue;
-            case ENUM -> enumValue;
-        };
-    }
+    return switch (valueType) {
+      case STRING -> stringValue;
+      case BOOLEAN -> booleanValue;
+      case INTEGER -> integerValue;
+      case OFFSET_DATE_TIME -> offsetDateTimeValue;
+      case ENUM -> enumValue;
+    };
+  }
 }

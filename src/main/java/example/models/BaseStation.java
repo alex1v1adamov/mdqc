@@ -24,15 +24,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class BaseStation {
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    BsStatus bsStatus;
-    @Id
-    private String id = "";
-    @Column(name = "name_in_nms")
-    private String nameInNms = "";
-    @ManyToOne
-    private Site site = null;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status")
+  BsStatus bsStatus;
 
+  @Id private String id = "";
 
+  @Column(name = "name_in_nms")
+  private String nameInNms = "";
+
+  @ManyToOne private Site site = null;
 }

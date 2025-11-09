@@ -12,33 +12,30 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
-
-/**
- * Определение предиката - корневая сущность
- */
+/** Определение предиката - корневая сущность */
 @Entity
 @Table(name = "predicate_definition", schema = "predicate")
 @Getter
 @Setter
 public class PredicateDefinition {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "id", updatable = false, nullable = false)
+  private UUID id;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+  @Column(name = "name", nullable = false)
+  private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "meta_entity_id", nullable = false)
-    private MetaEntity metaEntity;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "meta_entity_id", nullable = false)
+  private MetaEntity metaEntity;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "root_node_id")
-    private PredicateNode rootNode;
+  @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+  @JoinColumn(name = "root_node_id")
+  private PredicateNode rootNode;
 }

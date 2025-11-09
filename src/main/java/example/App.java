@@ -17,23 +17,21 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-/**
- * Example app using elide-spring.
- */
+/** Example app using elide-spring. */
 @SpringBootApplication
 @EntityScan
 @ImportRuntimeHints(AppRuntimeHints.class)
-@OpenAPIDefinition(info = @Info(title = "My Title"), security = @SecurityRequirement(name = "bearerAuth"))
+@OpenAPIDefinition(
+    info = @Info(title = "My Title"),
+    security = @SecurityRequirement(name = "bearerAuth"))
 @EnableJpaRepositories(repositoryFactoryBeanClass = EntityGraphJpaRepositoryFactoryBean.class)
-
 @SecurityScheme(
-        name = "bearerAuth",
-        type = SecuritySchemeType.HTTP,
-        bearerFormat = "JWT",
-        scheme = "bearer"
-)
+    name = "bearerAuth",
+    type = SecuritySchemeType.HTTP,
+    bearerFormat = "JWT",
+    scheme = "bearer")
 public class App {
-    public static void main(String[] args) throws Exception {
-        SpringApplication.run(App.class, args);
-    }
+  public static void main(String[] args) throws Exception {
+    SpringApplication.run(App.class, args);
+  }
 }

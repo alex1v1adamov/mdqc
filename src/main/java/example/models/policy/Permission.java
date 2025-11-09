@@ -1,6 +1,5 @@
 package example.models.policy;
 
-
 import com.yahoo.elide.annotation.Include;
 import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEntity;
@@ -18,12 +17,11 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 @Include
 @Entity
@@ -32,30 +30,30 @@ import java.util.UUID;
 @Setter
 public class Permission {
 
-    @Enumerated(EnumType.STRING)
-    @ElementCollection
-    @CollectionTable(
-            name = "permission_user_roles",
-            schema = "policy",
-            joinColumns = @JoinColumn(name = "permission_id")
-    )
-    @Column(name = "user_role")
-    Set<UserRole> userRoles = new HashSet<>();
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "entity_id", nullable = false)
-    MetaEntity entity;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "attribute_id", nullable = false)
-    MetaAttribute attribute;
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "predicate_id", nullable = true)
-    PredicateDefinition predicateDefinition;
-    /**
-     * Уникальный идентификатор сущности
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+  @Enumerated(EnumType.STRING)
+  @ElementCollection
+  @CollectionTable(
+      name = "permission_user_roles",
+      schema = "policy",
+      joinColumns = @JoinColumn(name = "permission_id"))
+  @Column(name = "user_role")
+  Set<UserRole> userRoles = new HashSet<>();
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "entity_id", nullable = false)
+  MetaEntity entity;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "attribute_id", nullable = false)
+  MetaAttribute attribute;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "predicate_id", nullable = true)
+  PredicateDefinition predicateDefinition;
+
+  /** Уникальный идентификатор сущности */
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "id", updatable = false, nullable = false)
+  private UUID id;
 }

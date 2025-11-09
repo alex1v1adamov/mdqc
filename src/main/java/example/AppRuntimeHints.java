@@ -41,103 +41,265 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
 
 public class AppRuntimeHints implements RuntimeHintsRegistrar {
-    @Override
-    public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-        hints.resources().registerPattern("db/changelog/changelog.xml");
+  @Override
+  public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+    hints.resources().registerPattern("db/changelog/changelog.xml");
 
-        hints.resources().registerPattern("analytics/models/tables/artifactDownloads.hjson");
+    hints.resources().registerPattern("analytics/models/tables/artifactDownloads.hjson");
 
-        hints.reflection().registerType(PhysicalNamingStrategyStandardImpl.class,
-                MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(
+            PhysicalNamingStrategyStandardImpl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        /*
-         * Logback Access Spring
-         */
-        hints.resources().registerPattern("dev/akkinoc/spring/boot/logback/access/logback-access-spring.xml");
+    /*
+     * Logback Access Spring
+     */
+    hints
+        .resources()
+        .registerPattern("dev/akkinoc/spring/boot/logback/access/logback-access-spring.xml");
 
-        /*
-         * ActiveMQ
-         */
-        hints.resources().registerPattern("activemq-version.properties");
+    /*
+     * ActiveMQ
+     */
+    hints.resources().registerPattern("activemq-version.properties");
 
-        hints.reflection().registerType(RoundRobinConnectionLoadBalancingPolicy.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(
+            RoundRobinConnectionLoadBalancingPolicy.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        hints.reflection().registerType(ActiveMQClientMessageBundle_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(
+            ActiveMQClientMessageBundle_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        hints.reflection().registerType(ActiveMQClientLogger_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(ActiveMQClientLogger_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        hints.reflection().registerType(InVMAcceptorFactory.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(InVMAcceptorFactory.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        hints.reflection().registerType(InVMConnectorFactory.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(InVMConnectorFactory.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        hints.reflection().registerType(ActiveMQMessageBundle_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(
+            ActiveMQMessageBundle_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        hints.reflection().registerType(ActiveMQServerLogger_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(ActiveMQServerLogger_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        hints.reflection().registerType(ActiveMQConnectionFactory.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(ActiveMQConnectionFactory.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        hints.reflection().registerType(AuditLogger_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
+    hints
+        .reflection()
+        .registerType(AuditLogger_impl.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS);
 
-        hints.reflection().registerType(AbstractByteBufAllocator.class, MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(AbstractByteBufAllocator.class, MemberCategory.INVOKE_DECLARED_METHODS);
 
-        hints.reflection().registerType(AbstractReferenceCountedByteBuf.class, MemberCategory.DECLARED_FIELDS);
+    hints
+        .reflection()
+        .registerType(AbstractReferenceCountedByteBuf.class, MemberCategory.DECLARED_FIELDS);
 
-        hints.reflection().registerType(
-                TypeReference.of("org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields"),
-                MemberCategory.DECLARED_FIELDS);
+    hints
+        .reflection()
+        .registerType(
+            TypeReference.of("org.jctools.queues.BaseMpscLinkedArrayQueueColdProducerFields"),
+            MemberCategory.DECLARED_FIELDS);
 
-        hints.reflection().registerType(TypeReference.of("org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields"),
-                MemberCategory.DECLARED_FIELDS);
+    hints
+        .reflection()
+        .registerType(
+            TypeReference.of("org.jctools.queues.BaseMpscLinkedArrayQueueConsumerFields"),
+            MemberCategory.DECLARED_FIELDS);
 
-        hints.reflection().registerType(TypeReference.of("org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields"),
-                MemberCategory.DECLARED_FIELDS);
+    hints
+        .reflection()
+        .registerType(
+            TypeReference.of("org.jctools.queues.BaseMpscLinkedArrayQueueProducerFields"),
+            MemberCategory.DECLARED_FIELDS);
 
-        /*
-         * Spring Framework springframework.jms.connection.SingleConnectionFactory
-         */
-        hints.proxies().registerJdkProxy(jakarta.jms.Connection.class, jakarta.jms.QueueConnection.class,
-                jakarta.jms.TopicConnection.class);
+    /*
+     * Spring Framework springframework.jms.connection.SingleConnectionFactory
+     */
+    hints
+        .proxies()
+        .registerJdkProxy(
+            jakarta.jms.Connection.class,
+            jakarta.jms.QueueConnection.class,
+            jakarta.jms.TopicConnection.class);
 
-        /*
-         * Jetty 12 WebSocket
-         *
-         * @see org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory
-         * @see https://github.com/oracle/graalvm-reachability-metadata/blob/master/metadata/org.eclipse.jetty/jetty-server/12.0.1/reflect-config.json
-         */
-        hints.reflection().registerType(JakartaWebSocketSession.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
+    /*
+     * Jetty 12 WebSocket
+     *
+     * @see org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory
+     * @see https://github.com/oracle/graalvm-reachability-metadata/blob/master/metadata/org.eclipse.jetty/jetty-server/12.0.1/reflect-config.json
+     */
+    hints
+        .reflection()
+        .registerType(
+            JakartaWebSocketSession.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
 
-        hints.reflection().registerType(BooleanDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(ByteArrayDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(ByteBufferDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(CharacterDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(DoubleDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(FloatDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(IntegerDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(LongDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(ShortDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(StringDecoder.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            BooleanDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            ByteArrayDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            ByteBufferDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            CharacterDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            DoubleDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            FloatDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            IntegerDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            LongDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            ShortDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            StringDecoder.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
 
-        hints.reflection().registerType(DecodedTextMessageSink.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(DecodedBinaryMessageSink.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(DecodedTextStreamMessageSink.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(DecodedBinaryStreamMessageSink.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(PartialStringMessageSink.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(PartialByteBufferMessageSink.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(PartialByteArrayMessageSink.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            DecodedTextMessageSink.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            DecodedBinaryMessageSink.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            DecodedTextStreamMessageSink.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            DecodedBinaryStreamMessageSink.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            PartialStringMessageSink.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            PartialByteBufferMessageSink.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            PartialByteArrayMessageSink.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
 
-        /*
-         * @see https://github.com/oracle/graalvm-reachability-metadata/pull/495/files
-         */
-        hints.reflection().registerType(ClassMatcher.ByPackageOrName.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(ClassMatcher.ByLocationOrModule.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
+    /*
+     * @see https://github.com/oracle/graalvm-reachability-metadata/pull/495/files
+     */
+    hints
+        .reflection()
+        .registerType(
+            ClassMatcher.ByPackageOrName.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            ClassMatcher.ByLocationOrModule.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
 
-        /*
-         * Liquibase
-         * @see https://github.com/oracle/graalvm-reachability-metadata/issues/431
-         */
-        hints.reflection().registerType(LoggerUIService.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(SqlParserFactory.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(LiquibaseTableNamesFactory.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-        hints.reflection().registerType(ShowSummaryGeneratorFactory.class, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS);
-    }
+    /*
+     * Liquibase
+     * @see https://github.com/oracle/graalvm-reachability-metadata/issues/431
+     */
+    hints
+        .reflection()
+        .registerType(
+            LoggerUIService.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            SqlParserFactory.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            LiquibaseTableNamesFactory.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+    hints
+        .reflection()
+        .registerType(
+            ShowSummaryGeneratorFactory.class,
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.INVOKE_DECLARED_METHODS);
+  }
 }

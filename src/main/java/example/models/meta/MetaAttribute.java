@@ -1,6 +1,5 @@
 package example.models.meta;
 
-
 import com.yahoo.elide.annotation.Include;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,19 +13,15 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.hibernate.annotations.Immutable;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-
-/**
- * Мета-описание атрибута бизнес-сущности
- * Используется для сравнения с Jakarta Metamodel
- */
+/** Мета-описание атрибута бизнес-сущности Используется для сравнения с Jakarta Metamodel */
 @Entity
 @Include
 @Table(name = "meta_attribute", schema = "meta")
@@ -36,97 +31,67 @@ import java.util.UUID;
 @FieldNameConstants
 public class MetaAttribute {
 
-    /**
-     * Уникальный идентификатор атрибута
-     */
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+  /** Уникальный идентификатор атрибута */
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "id", updatable = false, nullable = false)
+  private UUID id;
 
-    /**
-     * Имя атрибута в метамодели (например, "baseStations" для коллекции)
-     */
-    @Column(nullable = false)
-    private String name;
+  /** Имя атрибута в метамодели (например, "baseStations" для коллекции) */
+  @Column(nullable = false)
+  private String name;
 
+  /** Сущность, к которой принадлежит данный атрибут */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "entity_id", nullable = false)
+  private MetaEntity entity;
 
-    /**
-     * Сущность, к которой принадлежит данный атрибут
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "entity_id", nullable = false)
-    private MetaEntity entity;
+  /** Тип атрибута: SINGULAR - одиночное значение, PLURAL - коллекция */
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private AttributeType type;
 
+  /**
+   * Категория типа данных атрибута. для AttributeType.SINGULAR - тип аттрибута, для
+   * AttributeType.PLURAL - тип элемента - BASIC: простой тип (String, Integer, LocalDate, etc.) -
+   * ENTITY: ссылка на другую сущность
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "attribute_category", nullable = false)
+  private AttributeCategory attributeCategory;
 
-    /**
-     * Тип атрибута: SINGULAR - одиночное значение, PLURAL - коллекция
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AttributeType type;
+  /** тип для AttributeCategory.BASIC */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "basic_type")
+  private BasicType basicType;
 
-    /**
-     * Категория типа данных атрибута. для AttributeType.SINGULAR - тип аттрибута, для AttributeType.PLURAL -  тип элемента
-     * - BASIC: простой тип (String, Integer, LocalDate, etc.)
-     * - ENTITY: ссылка на другую сущность
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "attribute_category", nullable = false)
-    private AttributeCategory attributeCategory;
+  /** Ссылка на enum тип (для attributeCategory = ENUM) */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "meta_enum_id")
+  private MetaEnum metaEnum;
 
-    /**
-     * тип для AttributeCategory.BASIC
-     */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "basic_type")
-    private BasicType basicType;
+  /** тип для AttributeCategory.ENTITY */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "attribute_entity_type_id")
+  private MetaEntity attributeEntityType;
 
-    /**
-     * Ссылка на enum тип (для attributeCategory = ENUM)
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "meta_enum_id")
-    private MetaEnum metaEnum;
+  /**
+   * Флаг bidirectional связи ПРАВИЛА: - true только для атрибутов с attributeCategory = ENTITY -
+   * Если true, то relatedAttribute обязателен - Обратная связь должна быть симметричной
+   */
+  @Column(name = "is_bidirectional", nullable = false)
+  private Boolean isBidirectional = false;
 
+  /**
+   * Связанный атрибут в bidirectional связи ПРАВИЛА: - Обязательно если isBidirectional = true -
+   * Запрещено для атрибутов с attributeCategory = BASIC - relatedAttribute.isBidirectional должен
+   * быть true - relatedAttribute.relatedAttribute должен ссылаться обратно на этот атрибут
+   */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "related_attribute_id")
+  private MetaAttribute relatedAttribute;
 
-    /**
-     * тип для AttributeCategory.ENTITY
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "attribute_entity_type_id")
-    private MetaEntity attributeEntityType;
-
-
-    /**
-     * Флаг bidirectional связи
-     * ПРАВИЛА:
-     * - true только для атрибутов с attributeCategory = ENTITY
-     * - Если true, то relatedAttribute обязателен
-     * - Обратная связь должна быть симметричной
-     */
-    @Column(name = "is_bidirectional", nullable = false)
-    private Boolean isBidirectional = false;
-
-    /**
-     * Связанный атрибут в bidirectional связи
-     * ПРАВИЛА:
-     * - Обязательно если isBidirectional = true
-     * - Запрещено для атрибутов с attributeCategory = BASIC
-     * - relatedAttribute.isBidirectional должен быть true
-     * - relatedAttribute.relatedAttribute должен ссылаться обратно на этот атрибут
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "related_attribute_id")
-    private MetaAttribute relatedAttribute;
-
-
-    /**
-     * Обратные ссылки для bidirectional связей
-     */
-    @OneToMany(mappedBy = "relatedAttribute")
-    private Set<MetaAttribute> inverseRelatedAttributes = new HashSet<>();
-
-
+  /** Обратные ссылки для bidirectional связей */
+  @OneToMany(mappedBy = "relatedAttribute")
+  private Set<MetaAttribute> inverseRelatedAttributes = new HashSet<>();
 }
-

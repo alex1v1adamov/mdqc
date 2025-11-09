@@ -12,5 +12,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @ConfigurationProperties(prefix = "app.security")
 public class SecurityConfigProperties {
-    private String origin = "*";
+  private String origin = "*";
 }

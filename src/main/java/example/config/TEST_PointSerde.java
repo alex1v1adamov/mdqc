@@ -8,17 +8,17 @@ import org.locationtech.jts.geom.Point;
 
 @ElideTypeConverter(type = Point.class, name = "Point")
 public class TEST_PointSerde implements Serde<String, Point> {
-    @Override
-    public Point deserialize(String val) {
+  @Override
+  public Point deserialize(String val) {
 
-        Point point = new GeometryFactory().createPoint(new Coordinate(1, 2));
-        return point;
-    }
+    Point point = new GeometryFactory().createPoint(new Coordinate(1, 2));
+    return point;
+  }
 
-    @Override
-    public String serialize(Point val) {
-//        GeometrySerializer geometrySerializer = new GeometrySerializer();
+  @Override
+  public String serialize(Point val) {
+    //        GeometrySerializer geometrySerializer = new GeometrySerializer();
 
-        return "TEST Point STRING";
-    }
+    return "TEST Point STRING";
+  }
 }
