@@ -55,7 +55,7 @@ spring:
         '[default_batch_fetch_size]': 100
         '[use_scrollable_resultset]': true
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
       naming:
         physical-strategy: 'org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl'
   datasource:
