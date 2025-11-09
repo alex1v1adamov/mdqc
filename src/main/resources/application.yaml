@@ -26,7 +26,7 @@ elide:
     enabled: false
     thread-pool-size: 2
     cleanup:
-      enabled: true
+      enabled: false
       query-max-run-time: 65s
       query-retention-duration: 7d
     export:
@@ -55,20 +55,18 @@ spring:
         '[default_batch_fetch_size]': 100
         '[use_scrollable_resultset]': true
     hibernate:
-      ddl-auto: validate
+      ddl-auto: create
       naming:
         physical-strategy: 'org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl'
   datasource:
-    url: 'jdbc:postgresql://localhost:8432/dnp'
-    username: 'user1'
+    url: 'jdbc:postgresql://localhost:8432/mdqc'
+    username: 'postgres'
     password: '1qaz2wsx!!'
     driver-class-name: org.postgresql.Driver
   liquibase:
     enabled: false
     change-log: 'classpath:db/changelog/changelog.xml'
-  activemq:
-    broker-url: 'vm://embedded?broker.persistent=false,useShutdownHook=false'
-    in-memory: true
+
 server:
   port: 8080
 logging:
