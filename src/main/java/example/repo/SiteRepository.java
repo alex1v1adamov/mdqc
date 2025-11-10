@@ -9,7 +9,7 @@ import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface SIteRepository
+public interface SiteRepository
     extends JpaRepository<MetaAttribute, UUID>,
         JpaSpecificationExecutor<Site>,
         QuerydslPredicateExecutor<Site> {}

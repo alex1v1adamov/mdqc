@@ -7,12 +7,11 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
 
 @ElideTypeConverter(type = Point.class, name = "Point")
-public class TEST_PointSerde implements Serde<String, Point> {
+public class PointSerde implements Serde<String, Point> {
   @Override
   public Point deserialize(String val) {
 
-    Point point = new GeometryFactory().createPoint(new Coordinate(1, 2));
-    return point;
+      return new GeometryFactory().createPoint(new Coordinate(1, 2));
   }
 
   @Override
