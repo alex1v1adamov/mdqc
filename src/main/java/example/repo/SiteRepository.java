@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SiteRepository
-    extends JpaRepository<MetaAttribute, UUID>,
+    extends JpaRepository<Site, UUID>,
         JpaSpecificationExecutor<Site>,
         QuerydslPredicateExecutor<Site> {}
