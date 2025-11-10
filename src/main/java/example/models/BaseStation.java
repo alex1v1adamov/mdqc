@@ -14,6 +14,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.OffsetDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -32,6 +33,9 @@ public class BaseStation {
   @Enumerated(EnumType.STRING)
   @Column(name = "status")
   BsStatus bsStatus;
+
+  @Column(name = "bs_date_time")
+  OffsetDateTime bsDateTime;
 
   @ManyToOne private Site site = null;
 }
