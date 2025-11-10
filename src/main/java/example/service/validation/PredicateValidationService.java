@@ -1,4 +1,4 @@
-package example.service;
+package example.service.validation;
 
 import example.models.meta.AttributeCategory;
 import example.models.meta.BasicType;

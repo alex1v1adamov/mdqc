@@ -1,4 +1,4 @@
-package example.service;
+package example.service.validation;
 
 import example.models.meta.*;
 import jakarta.persistence.EntityManagerFactory;

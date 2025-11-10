@@ -1,4 +1,4 @@
-package example.service;
+package example.service.validation;
 
 /** alexander.adamov created on 07.11.2025 */
 public interface Validate<T> {
