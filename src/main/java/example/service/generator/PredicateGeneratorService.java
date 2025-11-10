@@ -1,11 +1,15 @@
 package example.service.generator;
 
+import com.querydsl.core.types.ConstantImpl;
 import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.Ops;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.ComparablePath;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.core.types.dsl.PathBuilder;
 import example.models.meta.AttributeCategory;
+import example.models.meta.BasicType;
 import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEntity;
 import example.models.meta.MetaEnumValue;
@@ -15,13 +19,16 @@ import example.models.predicate.PredicateDefinition;
 import example.models.predicate.PredicateNode;
 import example.models.predicate.PredicateNodeValue;
 import example.models.predicate.PredicatePathExpression;
+import example.service.SpatialTemplateHelper;
 import java.lang.reflect.Method;
-import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.locationtech.jts.geom.Point;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
@@ -29,13 +36,24 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PredicateGeneratorService {
 
-  private final List<NodeHandler> handlers;
+  private final ExpressionResolver expressionResolver;
   private final EntityClassResolver entityClassResolver;
 
   public BooleanExpression generatePredicate(PredicateDefinition predicateDefinition) {
     Class<?> entityClass = entityClassResolver.resolve(predicateDefinition.getMetaEntity());
     PathBuilder<?> entityPath = new PathBuilder<>(entityClass, "entity");
-    return buildExpression(predicateDefinition.getRootNode(), entityPath);
+    return expressionResolver.buildExpression(predicateDefinition.getRootNode(), entityPath);
+  }
+}
+
+// ExpressionResolver.java
+@Component
+class ExpressionResolver {
+
+  private final List<NodeHandler> handlers;
+
+  public ExpressionResolver(@Lazy List<NodeHandler> handlers) {
+    this.handlers = handlers;
   }
 
   public BooleanExpression buildExpression(PredicateNode node, PathBuilder<?> entityPath) {
@@ -76,8 +94,7 @@ interface NodeHandler {
 @RequiredArgsConstructor
 class LogicalOperatorHandler implements NodeHandler {
 
-  private final ExpressionBuilder expressionBuilder;
-  private final OperatorProcessor operatorProcessor;
+  @Lazy private final ExpressionResolver expressionResolver;
 
   @Override
   public boolean supports(PredicateNode node) {
@@ -86,13 +103,14 @@ class LogicalOperatorHandler implements NodeHandler {
 
   @Override
   public BooleanExpression handle(PredicateNode node, PathBuilder<?> entityPath) {
-    BooleanExpression left = buildExpression(node.getLeftOperand(), entityPath);
+    BooleanExpression left = expressionResolver.buildExpression(node.getLeftOperand(), entityPath);
 
     if (node.getOperatorType() == OperatorType.NOT) {
       return left != null ? left.not() : null;
     }
 
-    BooleanExpression right = buildExpression(node.getRightOperand(), entityPath);
+    BooleanExpression right =
+        expressionResolver.buildExpression(node.getRightOperand(), entityPath);
 
     if (left == null && right == null) return null;
     if (left == null) return right;
@@ -104,28 +122,6 @@ class LogicalOperatorHandler implements NodeHandler {
       default ->
           throw new IllegalArgumentException(
               "Unsupported logical operator: " + node.getOperatorType());
-    };
-  }
-
-  private BooleanExpression buildExpression(PredicateNode node, PathBuilder<?> entityPath) {
-    if (node == null) return null;
-
-    // Простая реализация без рекурсивной зависимости
-    return switch (node.getNodeType()) {
-      case LOGICAL_OPERATOR -> handle(node, entityPath);
-      case COMPARISON_OPERATOR ->
-          (BooleanExpression)
-              operatorProcessor.process(
-                  node.getOperatorType(),
-                  expressionBuilder.buildLeftOperand(node, entityPath),
-                  node);
-      case PATH_EXPRESSION -> {
-        Expression<?> pathExpr = expressionBuilder.buildOperandExpression(node, entityPath);
-        yield pathExpr != null ? Expressions.predicate(Ops.IS_NOT_NULL, pathExpr) : null;
-      }
-      case VALUE_CONSTANT ->
-          throw new IllegalArgumentException(
-              "VALUE_CONSTANT cannot be used as standalone predicate");
     };
   }
 }
@@ -152,17 +148,12 @@ class ComparisonOperatorHandler implements NodeHandler {
 
 // ExpressionBuilder.java
 @Component
+@RequiredArgsConstructor
 class ExpressionBuilder {
 
   private final EntityClassResolver entityClassResolver;
   private final ConstantBuilder constantBuilder;
-
-  @Autowired
-  public ExpressionBuilder(
-      EntityClassResolver entityClassResolver, ConstantBuilder constantBuilder) {
-    this.entityClassResolver = entityClassResolver;
-    this.constantBuilder = constantBuilder;
-  }
+  @Lazy private final ExpressionResolver expressionResolver;
 
   public Expression<?> buildLeftOperand(PredicateNode node, PathBuilder<?> entityPath) {
     if (node.getMetaAttribute() != null) {
@@ -184,6 +175,7 @@ class ExpressionBuilder {
       case VALUE_CONSTANT -> constantBuilder.buildConstant(node.getValue());
       case PATH_EXPRESSION -> buildPathExpression(node.getPathExpression(), entityPath);
       case COMPARISON_OPERATOR -> buildLeftOperand(node, entityPath);
+      case LOGICAL_OPERATOR -> expressionResolver.buildExpression(node, entityPath);
       default ->
           throw new IllegalArgumentException(
               "Unsupported operand node type: " + node.getNodeType());
@@ -232,8 +224,11 @@ class ExpressionBuilder {
       case BOOLEAN -> Expressions.booleanPath(fullPath);
       case INTEGER -> Expressions.numberPath(Integer.class, fullPath);
       case DOUBLE -> Expressions.numberPath(Double.class, fullPath);
-      case OFFSET_DATE_TIME -> Expressions.datePath(LocalDate.class, fullPath);
+      case OFFSET_DATE_TIME -> Expressions.dateTimePath(OffsetDateTime.class, fullPath);
       case ENUM -> Expressions.stringPath(fullPath);
+      case POINT -> Expressions.comparablePath(Point.class, fullPath);
+      default ->
+          throw new IllegalArgumentException("Unsupported basic type: " + attribute.getBasicType());
     };
   }
 
@@ -247,8 +242,15 @@ class ExpressionBuilder {
         case BOOLEAN -> pathBuilder.getBoolean(attributeName);
         case INTEGER -> pathBuilder.getNumber(attributeName, Integer.class);
         case DOUBLE -> pathBuilder.getNumber(attributeName, Double.class);
-        case OFFSET_DATE_TIME -> pathBuilder.getDate(attributeName, LocalDate.class);
+        case OFFSET_DATE_TIME -> pathBuilder.getDateTime(attributeName, OffsetDateTime.class);
         case ENUM -> pathBuilder.getSimple(attributeName, String.class);
+        case POINT -> {
+          ComparablePath<Point> pointPath = pathBuilder.getComparable(attributeName, Point.class);
+          yield pointPath;
+        }
+        default ->
+            throw new IllegalArgumentException(
+                "Unsupported basic type: " + metaAttribute.getBasicType());
       };
     } else {
       return pathBuilder.get(attributeName);
@@ -263,9 +265,15 @@ class OperatorProcessor {
 
   private final ExpressionBuilder expressionBuilder;
   private final ConstantBuilder constantBuilder;
+  private final SpatialTemplateHelper spatialTemplateHelper;
 
   public BooleanExpression process(
       OperatorType operatorType, Expression<?> left, PredicateNode node) {
+    // Проверяем, является ли это DISTANCE_SPHERE операцией
+    if (isDistanceSphereOperation(node, left)) {
+      return buildDistanceSphereExpression(left, node);
+    }
+
     return switch (operatorType) {
       case IS_NULL -> Expressions.predicate(Ops.IS_NULL, left);
       case IS_NOT_NULL -> Expressions.predicate(Ops.IS_NOT_NULL, left);
@@ -273,6 +281,99 @@ class OperatorProcessor {
           buildInExpression(left, node.getInValues(), operatorType == OperatorType.NOT_IN);
       case BETWEEN -> buildBetweenExpression(left, node);
       default -> buildBinaryExpression(operatorType, left, node);
+    };
+  }
+
+  private boolean isDistanceSphereOperation(PredicateNode node, Expression<?> left) {
+    if (node.getMetaAttribute() == null) return false;
+
+    boolean isPointAttribute = node.getMetaAttribute().getBasicType() == BasicType.POINT;
+    boolean isDistanceOperator =
+        node.getOperatorType() == OperatorType.LT
+            || node.getOperatorType() == OperatorType.GT
+            || node.getOperatorType() == OperatorType.LOE
+            || node.getOperatorType() == OperatorType.GOE
+            || node.getOperatorType() == OperatorType.EQ
+            || node.getOperatorType() == OperatorType.NE;
+    boolean hasValidOperands = node.getLeftOperand() != null && node.getRightOperand() != null;
+    boolean isPointExpression =
+        left instanceof ComparablePath && Point.class.isAssignableFrom(left.getType());
+
+    return isPointAttribute && isDistanceOperator && hasValidOperands && isPointExpression;
+  }
+
+  private BooleanExpression buildDistanceSphereExpression(Expression<?> left, PredicateNode node) {
+    if (!(left instanceof ComparablePath)) {
+      throw new IllegalArgumentException("DISTANCE_SPHERE operation requires geometry attribute");
+    }
+
+    ComparablePath<Point> geometryPath = (ComparablePath<Point>) left;
+
+    Expression<?> targetPointExpr =
+        expressionBuilder.buildOperandExpression(node.getLeftOperand(), null);
+    if (targetPointExpr == null) {
+      throw new IllegalArgumentException(
+          "DISTANCE_SPHERE operation requires target point in leftOperand");
+    }
+
+    Point targetPoint = extractPointValue(targetPointExpr);
+    if (targetPoint == null) {
+      throw new IllegalArgumentException(
+          "DISTANCE_SPHERE operation requires valid Point geometry in leftOperand");
+    }
+
+    Expression<?> distanceValueExpr =
+        expressionBuilder.buildOperandExpression(node.getRightOperand(), null);
+    if (distanceValueExpr == null) {
+      throw new IllegalArgumentException(
+          "DISTANCE_SPHERE operation requires distance value in rightOperand");
+    }
+
+    Double distanceValue = extractDoubleValue(distanceValueExpr);
+    if (distanceValue == null) {
+      throw new IllegalArgumentException("DISTANCE_SPHERE operation requires valid distance value");
+    }
+
+    NumberTemplate<Double> distanceExpr =
+        spatialTemplateHelper.distanceSphere(geometryPath, targetPoint);
+
+    return buildComparisonExpression(distanceExpr, distanceValue, node.getOperatorType());
+  }
+
+  private Point extractPointValue(Expression<?> pointExpression) {
+    if (pointExpression instanceof ConstantImpl) {
+      Object value = ((ConstantImpl) pointExpression).getConstant();
+      if (value instanceof Point) {
+        return (Point) value;
+      }
+    }
+    return null;
+  }
+
+  private Double extractDoubleValue(Expression<?> doubleExpression) {
+    if (doubleExpression instanceof ConstantImpl) {
+      Object value = ((ConstantImpl) doubleExpression).getConstant();
+      if (value instanceof Double) {
+        return (Double) value;
+      } else if (value instanceof Number) {
+        return ((Number) value).doubleValue();
+      }
+    }
+    return null;
+  }
+
+  private BooleanExpression buildComparisonExpression(
+      NumberTemplate<Double> distanceExpr, Double distanceValue, OperatorType operatorType) {
+    return switch (operatorType) {
+      case EQ -> distanceExpr.eq(distanceValue);
+      case NE -> distanceExpr.ne(distanceValue);
+      case GT -> distanceExpr.gt(distanceValue);
+      case LT -> distanceExpr.lt(distanceValue);
+      case GOE -> distanceExpr.goe(distanceValue);
+      case LOE -> distanceExpr.loe(distanceValue);
+      default ->
+          throw new IllegalArgumentException(
+              "Unsupported operator for DISTANCE_SPHERE: " + operatorType);
     };
   }
 
@@ -314,16 +415,14 @@ class OperatorProcessor {
   }
 
   private BooleanExpression buildBetweenExpression(Expression<?> left, PredicateNode node) {
-    Expression<?> lowerBound =
-        expressionBuilder.buildOperandExpression(node.getLeftOperand(), null);
-    Expression<?> upperBound =
-        expressionBuilder.buildOperandExpression(node.getRightOperand(), null);
+    Expression<?> fromValue = expressionBuilder.buildOperandExpression(node.getLeftOperand(), null);
+    Expression<?> toValue = expressionBuilder.buildOperandExpression(node.getRightOperand(), null);
 
-    if (lowerBound == null || upperBound == null) {
-      throw new IllegalArgumentException("BETWEEN operator requires both lower and upper bounds");
+    if (fromValue == null || toValue == null) {
+      throw new IllegalArgumentException("BETWEEN operator requires both from and to values");
     }
 
-    return Expressions.predicate(Ops.BETWEEN, left, lowerBound, upperBound);
+    return Expressions.predicate(Ops.BETWEEN, left, fromValue, toValue);
   }
 }
 
@@ -339,8 +438,12 @@ class ConstantBuilder {
     if (valueObj == null) return null;
 
     return switch (value.getValueType()) {
-      case STRING, BOOLEAN, INTEGER, OFFSET_DATE_TIME, DOUBLE -> Expressions.constant(valueObj);
+      case STRING, BOOLEAN, INTEGER, DOUBLE -> Expressions.constant(valueObj);
+      case OFFSET_DATE_TIME -> Expressions.constant(valueObj);
+      case POINT -> Expressions.constant(valueObj);
       case ENUM -> buildEnumConstant(value);
+      default ->
+          throw new IllegalArgumentException("Unsupported value type: " + value.getValueType());
     };
   }
 
@@ -348,8 +451,8 @@ class ConstantBuilder {
   private Expression<?> buildEnumConstant(PredicateNodeValue value) {
     MetaEnumValue enumValue = (MetaEnumValue) value.getValue();
     Class<?> enumClass = Class.forName(enumValue.getMetaEnum().getClassName());
-    Method valueOfMethod = Enum.class.getMethod("valueOf", Class.class, String.class);
-    Object enumConstant = valueOfMethod.invoke(null, enumClass, enumValue.getName());
+    Method valueOfMethod = enumClass.getMethod("valueOf", String.class);
+    Object enumConstant = valueOfMethod.invoke(null, enumValue.getName());
     return Expressions.constant(enumConstant);
   }
 }
@@ -385,5 +488,28 @@ class ValueConstantHandler implements NodeHandler {
   @Override
   public Expression<?> handle(PredicateNode node, PathBuilder<?> entityPath) {
     throw new IllegalArgumentException("VALUE_CONSTANT cannot be used as standalone predicate");
+  }
+}
+
+// HandlerConfiguration.java
+@Component
+@RequiredArgsConstructor
+class HandlerConfiguration {
+
+  private final LogicalOperatorHandler logicalOperatorHandler;
+
+  private final ComparisonOperatorHandler comparisonOperatorHandler;
+
+  private final PathExpressionHandler pathExpressionHandler;
+
+  private final ValueConstantHandler valueConstantHandler;
+
+  @Bean
+  public List<NodeHandler> nodeHandlers() {
+    return List.of(
+        logicalOperatorHandler,
+        comparisonOperatorHandler,
+        pathExpressionHandler,
+        valueConstantHandler);
   }
 }

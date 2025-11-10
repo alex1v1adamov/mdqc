@@ -38,7 +38,7 @@ public class PermissionCheck extends OperationCheck<Object> {
     ChangeSpec changeSpec = optional.get();
     String entityName = changeSpec.getResource().getResourceType().getName();
     Object attributeName = changeSpec.getFieldName();
-//    User user = requestScope.getUser();
+    //    User user = requestScope.getUser();
     UserRole userRole = UserRole.ADMIN;
     Iterable<Permission> thisEntityPermissions =
         permissionRepository.findAll(QPermission.permission.entity.name.eq(entityName));

@@ -39,8 +39,8 @@ public class BaseStation {
 
   Integer rating;
 
-    @Column(name = "coverage_radius")
-  Double  coverageRadius;
+  @Column(name = "coverage_radius")
+  Double coverageRadius;
 
-    @ManyToOne private Site site = null;
+  @ManyToOne private Site site = null;
 }

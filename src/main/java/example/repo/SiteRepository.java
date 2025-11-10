@@ -1,7 +1,6 @@
 package example.repo;
 
 import example.models.Site;
-import example.models.meta.MetaAttribute;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
