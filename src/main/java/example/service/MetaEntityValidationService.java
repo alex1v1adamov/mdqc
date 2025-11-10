@@ -19,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class MetaEntityValidationService implements Validate<MetaEntity> {
 
-  private Metamodel metamodel;
-  private EntityManagerFactory entityManagerFactory;
+  private final Metamodel metamodel;
+  private final EntityManagerFactory entityManagerFactory;
 
   public MetaEntityValidationService(final EntityManagerFactory entityManagerFactory) {
     this.entityManagerFactory = entityManagerFactory;
@@ -211,7 +211,7 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
     List<String> metaEnumValueNames =
         metaAttribute.getMetaEnum().getValues().stream()
             .map(MetaEnumValue::getName)
-            .collect(Collectors.toList());
+            .toList();
 
     // Проверяем соответствие значений
     if (!jpaEnumValueNames.containsAll(metaEnumValueNames)) {
@@ -445,6 +445,4 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
     return null;
   }
 
-  private static final org.slf4j.Logger logger =
-      org.slf4j.LoggerFactory.getLogger(MetaEntityValidationService.class);
 }

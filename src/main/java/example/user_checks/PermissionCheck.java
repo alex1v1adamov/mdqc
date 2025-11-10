@@ -18,6 +18,8 @@ import jakarta.persistence.EntityManager;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,11 +27,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @SecurityCheck("RSMD")
 @Component
+@RequiredArgsConstructor
 public class PermissionCheck extends OperationCheck<Object> {
 
-  @Autowired PermissionRepository permissionRepository;
-  @Autowired PredicateGeneratorService predicateGeneratorService;
-  @Autowired EntityManager entityManager;
+  private final PermissionRepository permissionRepository;
+  private final PredicateGeneratorService predicateGeneratorService;
+  private final EntityManager entityManager;
 
   @Override
   public boolean ok(

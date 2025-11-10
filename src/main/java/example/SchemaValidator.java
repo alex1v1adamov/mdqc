@@ -12,6 +12,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.metamodel.Metamodel;
 import java.util.List;
+
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,13 +21,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
+@RequiredArgsConstructor
 public class SchemaValidator {
 
   private static final Logger logger = LoggerFactory.getLogger(SchemaValidator.class);
 
-  @Autowired private EntityManagerFactory entityManagerFactory;
-  @Autowired private MetaEntityRepository metaEntityRepository;
-  @Autowired private MetaEntityValidationService metaEntityValidationService;
+  private final  EntityManagerFactory entityManagerFactory;
+  private final  MetaEntityRepository metaEntityRepository;
+  private final  MetaEntityValidationService metaEntityValidationService;
 
   @PostConstruct
   @Transactional

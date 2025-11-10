@@ -19,7 +19,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 @UpdatePermission(expression = "RSMD")
-@Include(rootLevel = true, name = "baseStation")
+@Include(name = "baseStation")
 @Table(schema = "ri", name = "base_station")
 @Entity
 @Getter
