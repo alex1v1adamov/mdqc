@@ -11,19 +11,19 @@
 -->
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <title>GraphiQL</title>
     <style>
-      body {
-        height: 100%;
-        margin: 0;
-        width: 100%;
-        overflow: hidden;
-      }
+        body {
+            height: 100%;
+            margin: 0;
+            width: 100%;
+            overflow: hidden;
+        }
 
-      #graphiql {
-        height: 100vh;
-      }
+        #graphiql {
+            height: 100vh;
+        }
     </style>
 
     <!--
@@ -34,12 +34,12 @@
       include them directly in your favored resource bundler.
     -->
     <script
-      crossorigin
-      src="https://unpkg.com/react@18/umd/react.development.js"
+            crossorigin
+            src="https://unpkg.com/react@18/umd/react.development.js"
     ></script>
     <script
-      crossorigin
-      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+            crossorigin
+            src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
     ></script>
 
     <!--
@@ -47,103 +47,105 @@
       copy them directly into your environment, or perhaps include them in your
       favored resource bundler.
      -->
-    <link rel="stylesheet" href="https://unpkg.com/graphiql/graphiql.min.css" />
-  </head>
+    <link rel="stylesheet" href="https://unpkg.com/graphiql/graphiql.min.css"/>
+</head>
 
-  <body>
-    <div id="graphiql">Loading...</div>
-    <script
-      src="https://unpkg.com/graphiql/graphiql.min.js"
-      type="application/javascript"
-    ></script>
-    <script 
-      src="https://unpkg.com/graphql-ws/umd/graphql-ws.min.js"
-      type="application/javascript"
-    ></script>
-    <script>
-      let search;
-      if(parent.window) {
+<body>
+<div id="graphiql">Loading...</div>
+<script
+        src="https://unpkg.com/graphiql/graphiql.min.js"
+        type="application/javascript"
+></script>
+<script
+        src="https://unpkg.com/graphql-ws/umd/graphql-ws.min.js"
+        type="application/javascript"
+></script>
+<script>
+    let search;
+    if (parent.window) {
         search = parent.window.location.search;
-      }
-      if(!search) {
+    }
+    if (!search) {
         search = window.location.search;
-      }
-      const searchParams = new URLSearchParams(search);
-      let path = searchParams.get('path');
-      if(!path) {
+    }
+    const searchParams = new URLSearchParams(search);
+    let path = searchParams.get('path');
+    if (!path) {
         path = '';
-      } else {
+    } else {
         searchParams.delete('path');
         search = searchParams.toString();
-        if(search) {
-          search = `?${search}`
+        if (search) {
+            search = `?${search}`
         }
-      }
+    }
 
-      const contextPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/graphiql'));
-      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const subscriptionUrl = protocol + '://' + window.location.host + contextPath + '/subscription';
-      const wsClient = graphqlWs.createClient({
+    const contextPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/graphiql'));
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const subscriptionUrl = protocol + '://' + window.location.host + contextPath + '/subscription';
+    const wsClient = graphqlWs.createClient({
         url: `${subscriptionUrl}${path}${search}`,
         lazy: false, // connect as soon as the page opens
-      });
-      function fetcher(payload) {
+    });
+
+    function fetcher(payload) {
         let deferred = null;
         const pending = [];
         let throwMe = null,
-          done = false;
+            done = false;
         const dispose = wsClient.subscribe(payload, {
-          next: (data) => {
-            pending.push(data);
-            deferred?.resolve(false);
-          },
-          error: (err) => {
-            if (err instanceof Error) {
-              throwMe = err;
-            } else if (err instanceof CloseEvent) {
-              throwMe = new Error(
-                `Socket closed with event ${err.code} ${
-                  err.reason || ""
-                }`.trim()
-              );
-            } else {
-              // GraphQLError[]
-              throwMe = new Error(err.map(({ message }) => message).join(", "));
-            }
-            deferred?.reject(throwMe);
-          },
-          complete: () => {
-            done = true;
-            deferred?.resolve(true);
-          },
+            next: (data) => {
+                pending.push(data);
+                deferred?.resolve(false);
+            },
+            error: (err) => {
+                if (err instanceof Error) {
+                    throwMe = err;
+                } else if (err instanceof CloseEvent) {
+                    throwMe = new Error(
+                        `Socket closed with event ${err.code} ${
+                            err.reason || ""
+                        }`.trim()
+                    );
+                } else {
+                    // GraphQLError[]
+                    throwMe = new Error(err.map(({message}) => message).join(", "));
+                }
+                deferred?.reject(throwMe);
+            },
+            complete: () => {
+                done = true;
+                deferred?.resolve(true);
+            },
         });
         return {
-          [Symbol.asyncIterator]() {
-            return this;
-          },
-          async next() {
-            if (done) return { done: true, value: undefined };
-            if (throwMe) throw throwMe;
-            if (pending.length) return { value: pending.shift() };
-            return (await new Promise(
-              (resolve, reject) => (deferred = { resolve, reject })
-            ))
-              ? { done: true, value: undefined }
-              : { value: pending.shift() };
-          },
-          async return() {
-            dispose();
-            return { done: true, value: undefined };
-          },
+            [Symbol.asyncIterator]() {
+                return this;
+            },
+            async next() {
+                if (done) return {done: true, value: undefined};
+                if (throwMe) throw throwMe;
+                if (pending.length) return {value: pending.shift()};
+                return (await new Promise(
+                    (resolve, reject) => (deferred = {resolve, reject})
+                ))
+                    ? {done: true, value: undefined}
+                    : {value: pending.shift()};
+            },
+            async return() {
+                dispose();
+                return {done: true, value: undefined};
+            },
         };
-      }
-      const root = ReactDOM.createRoot(document.getElementById('graphiql'));
-      root.render(
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('graphiql'));
+    root.render(
         React.createElement(GraphiQL, {
-          fetcher,
-          defaultEditorToolsVisibility: true,
+            fetcher,
+            defaultEditorToolsVisibility: true,
         }),
-      );
-    </script>
-  </body>
+    );
+</script>
+</body>
 </html>

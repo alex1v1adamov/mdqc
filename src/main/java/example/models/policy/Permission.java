@@ -30,11 +30,11 @@ import lombok.Setter;
 @Setter
 public class Permission {
 
-    /** Уникальный идентификатор сущности */
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", updatable = false, nullable = false)
-    private UUID id;
+  /** Уникальный идентификатор сущности */
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "id", updatable = false, nullable = false)
+  private UUID id;
 
   @Enumerated(EnumType.STRING)
   @ElementCollection
@@ -54,8 +54,6 @@ public class Permission {
   MetaAttribute attribute;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "predicate_id", nullable = true)
+  @JoinColumn(name = "predicate_id")
   PredicateDefinition predicateDefinition;
-
-
 }

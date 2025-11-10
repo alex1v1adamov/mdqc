@@ -5,7 +5,6 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.Metamodel;
-
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,10 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class MetaEntityValidationService implements Validate<MetaEntity> {
 
   private final Metamodel metamodel;
-  private final EntityManagerFactory entityManagerFactory;
 
   public MetaEntityValidationService(final EntityManagerFactory entityManagerFactory) {
-    this.entityManagerFactory = entityManagerFactory;
     this.metamodel = entityManagerFactory.getMetamodel();
   }
 
@@ -96,9 +93,6 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
    */
   private List<String> validateJpaAttributes(EntityType<?> jpaEntity, MetaEntity metaEntity) {
     List<String> errors = new ArrayList<>();
-    Map<String, MetaAttribute> metaAttributesMap =
-        metaEntity.getAttributes().stream()
-            .collect(Collectors.toMap(MetaAttribute::getName, attr -> attr));
 
     // Создаем мапу JPA атрибутов для быстрого поиска
     Map<String, Attribute<?, ?>> jpaAttributesMap =
@@ -209,9 +203,7 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
 
     // Получаем значения из MetaEnum
     List<String> metaEnumValueNames =
-        metaAttribute.getMetaEnum().getValues().stream()
-            .map(MetaEnumValue::getName)
-            .toList();
+        metaAttribute.getMetaEnum().getValues().stream().map(MetaEnumValue::getName).toList();
 
     // Проверяем соответствие значений
     if (!jpaEnumValueNames.containsAll(metaEnumValueNames)) {
@@ -444,5 +436,4 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
     }
     return null;
   }
-
 }

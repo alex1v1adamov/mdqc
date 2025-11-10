@@ -6,7 +6,6 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.yahoo.elide.annotation.SecurityCheck;
 import com.yahoo.elide.core.security.ChangeSpec;
 import com.yahoo.elide.core.security.RequestScope;
-import com.yahoo.elide.core.security.User;
 import com.yahoo.elide.core.security.checks.OperationCheck;
 import example.models.policy.Permission;
 import example.models.policy.QPermission;
@@ -18,10 +17,8 @@ import jakarta.persistence.EntityManager;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -41,7 +38,7 @@ public class PermissionCheck extends OperationCheck<Object> {
     ChangeSpec changeSpec = optional.get();
     String entityName = changeSpec.getResource().getResourceType().getName();
     Object attributeName = changeSpec.getFieldName();
-    User user = requestScope.getUser();
+//    User user = requestScope.getUser();
     UserRole userRole = UserRole.ADMIN;
     Iterable<Permission> thisEntityPermissions =
         permissionRepository.findAll(QPermission.permission.entity.name.eq(entityName));
@@ -83,8 +80,8 @@ public class PermissionCheck extends OperationCheck<Object> {
                   PathBuilder<?> entity = new PathBuilder<>(object.getClass(), "entity");
                   JPAQuery<?> query = new JPAQuery<>(entityManager);
 
-                  Field field = null;
-                  Object value = null;
+                  Field field;
+                  Object value;
                   try {
                     field = object.getClass().getDeclaredField("id");
                     field.setAccessible(true);

@@ -11,7 +11,7 @@ public class PointSerde implements Serde<String, Point> {
   @Override
   public Point deserialize(String val) {
 
-      return new GeometryFactory().createPoint(new Coordinate(1, 2));
+    return new GeometryFactory().createPoint(new Coordinate(1, 2));
   }
 
   @Override

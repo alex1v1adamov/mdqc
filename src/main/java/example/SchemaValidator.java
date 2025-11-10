@@ -9,31 +9,23 @@ import example.service.MetaEntityValidationService;
 import example.service.ValidationResult;
 import io.vavr.collection.Stream;
 import jakarta.annotation.PostConstruct;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.metamodel.Metamodel;
 import java.util.List;
-
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class SchemaValidator {
 
-  private static final Logger logger = LoggerFactory.getLogger(SchemaValidator.class);
-
-  private final  EntityManagerFactory entityManagerFactory;
-  private final  MetaEntityRepository metaEntityRepository;
-  private final  MetaEntityValidationService metaEntityValidationService;
+  private final MetaEntityRepository metaEntityRepository;
+  private final MetaEntityValidationService metaEntityValidationService;
 
   @PostConstruct
   @Transactional
   public void validateSchema() {
-    Metamodel metamodel = entityManagerFactory.getMetamodel();
     List<MetaEntity> businessEntitiesMetaData =
         metaEntityRepository.findAll(
             null,
@@ -48,17 +40,17 @@ public class SchemaValidator {
                 .build());
     Stream<ValidationResult> resultList =
         Stream.ofAll(businessEntitiesMetaData)
-            .map(me -> metaEntityValidationService.validate(me))
+            .map(metaEntityValidationService::validate)
             .filter(x -> !x.isValid());
     if (!resultList.isEmpty()) {
       throw new IllegalStateException(
           resultList
               .map(ValidationResult::getErrors)
               .flatMap(Stream::ofAll)
-              .peek(logger::error)
+              .peek(log::error)
               .toJavaList()
               .toString());
     }
-    logger.info("Schema validation correct");
+    log.info("Schema validation correct");
   }
 }

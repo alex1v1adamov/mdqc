@@ -188,7 +188,7 @@ public class PredicateGeneratorService {
       case VALUE_CONSTANT -> buildConstantExpression(node);
       case PATH_EXPRESSION -> buildPathExpression(node, entityPath);
       case COMPARISON_OPERATOR -> // Для COMPARISON_OPERATOR в операндах - это атрибут
-              buildAttributeExpression(node, entityPath);
+          buildAttributeExpression(node, entityPath);
       default ->
           throw new IllegalArgumentException(
               "Unsupported operand node type: " + node.getNodeType());

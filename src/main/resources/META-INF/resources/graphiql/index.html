@@ -11,19 +11,19 @@
 -->
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <title>GraphiQL</title>
     <style>
-      body {
-        height: 100%;
-        margin: 0;
-        width: 100%;
-        overflow: hidden;
-      }
+        body {
+            height: 100%;
+            margin: 0;
+            width: 100%;
+            overflow: hidden;
+        }
 
-      #graphiql {
-        height: 100vh;
-      }
+        #graphiql {
+            height: 100vh;
+        }
     </style>
 
     <!--
@@ -34,12 +34,12 @@
       include them directly in your favored resource bundler.
     -->
     <script
-      crossorigin
-      src="https://unpkg.com/react@18/umd/react.development.js"
+            crossorigin
+            src="https://unpkg.com/react@18/umd/react.development.js"
     ></script>
     <script
-      crossorigin
-      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+            crossorigin
+            src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
     ></script>
 
     <!--
@@ -47,56 +47,56 @@
       copy them directly into your environment, or perhaps include them in your
       favored resource bundler.
      -->
-    <link rel="stylesheet" href="https://unpkg.com/graphiql/graphiql.min.css" />
-  </head>
+    <link rel="stylesheet" href="https://unpkg.com/graphiql/graphiql.min.css"/>
+</head>
 
-  <body>
-    <div id="graphiql">Loading...</div>
-    <script
-      src="https://unpkg.com/graphiql/graphiql.min.js"
-      type="application/javascript"
-    ></script>
-    <script 
-      src="https://unpkg.com/graphql-ws/umd/graphql-ws.min.js"
-      type="application/javascript"
-    ></script>
-    <script>
-      let search;
-      if(parent.window) {
+<body>
+<div id="graphiql">Loading...</div>
+<script
+        src="https://unpkg.com/graphiql/graphiql.min.js"
+        type="application/javascript"
+></script>
+<script
+        src="https://unpkg.com/graphql-ws/umd/graphql-ws.min.js"
+        type="application/javascript"
+></script>
+<script>
+    let search;
+    if (parent.window) {
         search = parent.window.location.search;
-      }
-      if(!search) {
+    }
+    if (!search) {
         search = window.location.search;
-      }
-      const searchParams = new URLSearchParams(search);
-      let path = searchParams.get('path');
-      if(!path) {
+    }
+    const searchParams = new URLSearchParams(search);
+    let path = searchParams.get('path');
+    if (!path) {
         path = '';
-      } else {
+    } else {
         searchParams.delete('path');
         search = searchParams.toString();
-        if(search) {
-          search = `?${search}`
+        if (search) {
+            search = `?${search}`
         }
-      }
+    }
 
-      const contextPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/graphiql'));
-      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-      const subscriptionUrl = protocol + '://' + window.location.host + contextPath + '/subscription';
-      const fetcher = GraphiQL.createFetcher({
+    const contextPath = window.location.pathname.substring(0, window.location.pathname.indexOf('/graphiql'));
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const subscriptionUrl = protocol + '://' + window.location.host + contextPath + '/subscription';
+    const fetcher = GraphiQL.createFetcher({
         url: `${contextPath}/graphql/api${path}${search}`,
         wsClient: graphqlWs.createClient({
-          url: `${subscriptionUrl}${path}${search}`,
-          lazy: false, // connect as soon as the page opens
+            url: `${subscriptionUrl}${path}${search}`,
+            lazy: false, // connect as soon as the page opens
         })
-      });
-      const root = ReactDOM.createRoot(document.getElementById('graphiql'));
-      root.render(
+    });
+    const root = ReactDOM.createRoot(document.getElementById('graphiql'));
+    root.render(
         React.createElement(GraphiQL, {
-          fetcher,
-          defaultEditorToolsVisibility: true,
+            fetcher,
+            defaultEditorToolsVisibility: true,
         }),
-      );
-    </script>
-  </body>
+    );
+</script>
+</body>
 </html>
