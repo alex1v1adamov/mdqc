@@ -30,7 +30,7 @@ public class SpatialTemplateHelper {
      * @return NumberTemplate для использования в QueryDSL predicate
      */
     public NumberTemplate<Double> distanceSphere(
-                                            JTSGeometryExpression<?> geometryPath,
+            ComparablePath<Point> geometryPath,
                                             Geometry geometry) {
         return Expressions.numberTemplate(
                 Double.class,

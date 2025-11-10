@@ -27,5 +27,8 @@ public enum OperatorType {
 
   // Null операторы
   IS_NULL,
-  IS_NOT_NULL
+  IS_NOT_NULL,
+
+  // GEOMETRY операторы
+  DISTANCE_SPHERE
 }
