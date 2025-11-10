@@ -34,7 +34,7 @@
         <maven-surefire-plugin.version>3.3.1</maven-surefire-plugin.version>
 
         <spring-data-jpa-entity-graph.version>3.2.3</spring-data-jpa-entity-graph.version>
-        <querydsl.version>5.0.0</querydsl.version>
+        <querydsl.version>5.1.0</querydsl.version>
         <lombok.version>1.18.40</lombok.version>
 
     </properties>
