@@ -37,5 +37,7 @@ public class BaseStation {
   @Column(name = "bs_date_time")
   OffsetDateTime bsDateTime;
 
-  @ManyToOne private Site site = null;
+    Integer rating;
+
+    @ManyToOne private Site site = null;
 }

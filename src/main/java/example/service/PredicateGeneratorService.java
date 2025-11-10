@@ -89,6 +89,11 @@ public class PredicateGeneratorService {
           : Expressions.predicate(Ops.IS_NOT_NULL, attributeExpression);
     }
 
+    // Специальная обработка для BETWEEN оператора
+    if (node.getOperatorType() == OperatorType.BETWEEN) {
+      return buildBetweenPredicate(node, entityPath);
+    }
+
     // Для остальных операторов сравнения
     Expression<?> left = buildLeftOperandExpression(node, entityPath);
     if (left == null) return null;
@@ -111,6 +116,23 @@ public class PredicateGeneratorService {
           throw new IllegalArgumentException(
               "Unsupported comparison operator: " + node.getOperatorType());
     };
+  }
+
+  private BooleanExpression buildBetweenPredicate(PredicateNode node, PathBuilder<?> entityPath) {
+    Expression<?> attributeExpression = buildAttributeExpression(node, entityPath);
+    if (attributeExpression == null) return null;
+
+    // Получаем левый и правый операнды (нижняя и верхняя границы)
+    Expression<?> lowerBound = buildOperandExpression(node.getLeftOperand(), entityPath);
+    Expression<?> upperBound = buildOperandExpression(node.getRightOperand(), entityPath);
+
+    if (lowerBound == null || upperBound == null) {
+      throw new IllegalArgumentException("BETWEEN operator requires both lower and upper bounds");
+    }
+
+    // Создаем BETWEEN предикат
+    // QueryDSL ожидает структуру: attribute.between(lower, upper)
+    return Expressions.predicate(Ops.BETWEEN, attributeExpression, lowerBound, upperBound);
   }
 
   private Expression<?> buildLeftOperandExpression(PredicateNode node, PathBuilder<?> entityPath) {

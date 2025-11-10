@@ -5,6 +5,8 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.metamodel.Attribute;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.Metamodel;
+
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -426,7 +428,8 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
         || javaType == boolean.class
         || javaType == Integer.class
         || javaType == int.class
-        || javaType.isEnum();
+        || javaType.isEnum()
+        || javaType == OffsetDateTime.class;
   }
 
   private BasicType determineBasicType(Class<?> javaType) {

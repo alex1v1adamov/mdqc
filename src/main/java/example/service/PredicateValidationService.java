@@ -172,17 +172,32 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     boolean hasPathExpression = node.getPathExpression() != null;
     boolean hasLeftOperand = node.getLeftOperand() != null;
 
-    if (!hasAttribute && !hasPathExpression && !hasLeftOperand) {
-      errors.add(
-          "COMPARISON_OPERATOR must have either metaAttribute, pathExpression or leftOperand");
-    }
+    // Специальная логика для BETWEEN оператора
+    if (node.getOperatorType() == OperatorType.BETWEEN) {
+      // BETWEEN требует metaAttribute и оба операнда
+      if (!hasAttribute) {
+        errors.add("BETWEEN operator must have metaAttribute defined");
+      }
+      if (node.getLeftOperand() == null || node.getRightOperand() == null) {
+        errors.add("BETWEEN operator must have both left and right operands");
+      }
+      if (hasPathExpression) {
+        errors.add("BETWEEN operator cannot have pathExpression");
+      }
+    } else {
+      // Для остальных операторов проверяем стандартные правила
+      if (!hasAttribute && !hasPathExpression && !hasLeftOperand) {
+        errors.add(
+            "COMPARISON_OPERATOR must have either metaAttribute, pathExpression or leftOperand");
+      }
 
-    // Проверка взаимной исключительности
-    if ((hasAttribute && hasPathExpression)
-        || (hasAttribute && hasLeftOperand)
-        || (hasPathExpression && hasLeftOperand)) {
-      errors.add(
-          "COMPARISON_OPERATOR can have only one of: metaAttribute, pathExpression, or leftOperand");
+      // Проверка взаимной исключительности (кроме BETWEEN)
+      if ((hasAttribute && hasPathExpression)
+          || (hasAttribute && hasLeftOperand)
+          || (hasPathExpression && hasLeftOperand)) {
+        errors.add(
+            "COMPARISON_OPERATOR can have only one of: metaAttribute, pathExpression, or leftOperand");
+      }
     }
 
     // Получаем целевой атрибут для проверки совместимости типов
@@ -192,22 +207,48 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
           validateOperatorAttributeCompatibility(node.getOperatorType(), targetAttribute));
     }
 
-    // Валидация правого операнда
+    // Валидация операндов
     if (node.getOperatorType() != OperatorType.IS_NULL
         && node.getOperatorType() != OperatorType.IS_NOT_NULL) {
 
-      if (node.getRightOperand() == null) {
-        errors.add("COMPARISON_OPERATOR must have rightOperand (except for IS_NULL/IS_NOT_NULL)");
-      } else {
-        ValidationResult rightResult = validatePredicateNode(node.getRightOperand(), context);
-        if (!rightResult.isValid()) {
-          errors.add("Right operand: " + String.join(", ", rightResult.getErrors()));
-        }
+      // Для BETWEEN проверяем оба операнда
+      if (node.getOperatorType() == OperatorType.BETWEEN) {
+        if (node.getLeftOperand() == null || node.getRightOperand() == null) {
+          errors.add("BETWEEN operator must have both left and right operands");
+        } else {
+          ValidationResult leftResult = validatePredicateNode(node.getLeftOperand(), context);
+          if (!leftResult.isValid()) {
+            errors.add("Left operand: " + String.join(", ", leftResult.getErrors()));
+          }
 
-        // Проверка совместимости типов атрибута и правого операнда
-        if (targetAttribute != null) {
-          errors.addAll(
-              validateAttributeOperandCompatibility(targetAttribute, node.getRightOperand()));
+          ValidationResult rightResult = validatePredicateNode(node.getRightOperand(), context);
+          if (!rightResult.isValid()) {
+            errors.add("Right operand: " + String.join(", ", rightResult.getErrors()));
+          }
+
+          // Проверка совместимости типов для BETWEEN
+          if (targetAttribute != null) {
+            errors.addAll(
+                validateAttributeOperandCompatibility(targetAttribute, node.getLeftOperand()));
+            errors.addAll(
+                validateAttributeOperandCompatibility(targetAttribute, node.getRightOperand()));
+          }
+        }
+      } else {
+        // Для остальных операторов проверяем только правый операнд
+        if (node.getRightOperand() == null) {
+          errors.add("COMPARISON_OPERATOR must have rightOperand (except for IS_NULL/IS_NOT_NULL)");
+        } else {
+          ValidationResult rightResult = validatePredicateNode(node.getRightOperand(), context);
+          if (!rightResult.isValid()) {
+            errors.add("Right operand: " + String.join(", ", rightResult.getErrors()));
+          }
+
+          // Проверка совместимости типов атрибута и правого операнда
+          if (targetAttribute != null) {
+            errors.addAll(
+                validateAttributeOperandCompatibility(targetAttribute, node.getRightOperand()));
+          }
         }
       }
     } else {
@@ -320,7 +361,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
           errors.add(
               String.format(
                   "Operator %s cannot be used with INTEGER attribute '%s'. "
-                      + "Allowed operators: EQ, NE, GT, LT, GOE, LOE, IN, NOT_IN, IS_NULL, IS_NOT_NULL",
+                      + "Allowed operators: EQ, NE, GT, LT, GOE, LOE, IN, NOT_IN, BETWEEN, IS_NULL, IS_NOT_NULL",
                   operatorType, attribute.getName()));
         }
         break;
@@ -454,7 +495,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
   private boolean isNumericCompatibleOperator(OperatorType operatorType) {
     return switch (operatorType) {
-      case EQ, NE, GT, LT, GOE, LOE, IN, NOT_IN, IS_NULL, IS_NOT_NULL -> true;
+      case EQ, NE, GT, LT, GOE, LOE, IN, NOT_IN, BETWEEN, IS_NULL, IS_NOT_NULL -> true;
       default -> false;
     };
   }
@@ -473,10 +514,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     };
   }
 
-  // Остальные методы остаются без изменений (validateValueConstantNode, validatePathExpressionNode
-  // и т.д.)
-  // ... [остальной код без изменений]
-
+  // Остальные методы остаются без изменений
   private List<String> validateValueConstantNode(PredicateNode node) {
     List<String> errors = new ArrayList<>();
 
