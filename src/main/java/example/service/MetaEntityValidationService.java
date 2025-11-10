@@ -419,6 +419,7 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
         || javaType == Boolean.class
         || javaType == boolean.class
         || javaType == Integer.class
+        || javaType == Double.class
         || javaType == int.class
         || javaType.isEnum()
         || javaType == OffsetDateTime.class;
@@ -427,10 +428,12 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
   private BasicType determineBasicType(Class<?> javaType) {
     if (javaType == String.class) {
       return BasicType.STRING;
-    } else if (javaType == Boolean.class || javaType == boolean.class) {
+    } else if (javaType == Boolean.class) {
       return BasicType.BOOLEAN;
-    } else if (javaType == Integer.class || javaType == int.class) {
+    } else if (javaType == Integer.class) {
       return BasicType.INTEGER;
+    } else if (javaType == Double.class) {
+      return BasicType.DOUBLE;
     } else if (javaType.isEnum()) {
       return BasicType.ENUM;
     }

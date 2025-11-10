@@ -56,6 +56,9 @@ public class PredicateNodeValue {
   @Column(name = "timestamp_value")
   private LocalDateTime timestampValue;
 
+  @Column(name = "double_value")
+  private Double doubleValue;
+
   /**
    * Значение перечисления ПРАВИЛА: - Используется ТОЛЬКО когда valueType = ENUM -
    * metaEnumValue.metaEnum должен соответствовать metaAttribute.metaEnum - Запрещено для других
@@ -108,6 +111,7 @@ public class PredicateNodeValue {
       case INTEGER -> integerValue;
       case OFFSET_DATE_TIME -> offsetDateTimeValue;
       case ENUM -> enumValue;
+      case DOUBLE -> doubleValue;
     };
   }
 }

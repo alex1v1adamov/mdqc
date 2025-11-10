@@ -241,6 +241,7 @@ public class PredicateGeneratorService {
       case STRING -> Expressions.stringPath(fullPath);
       case BOOLEAN -> Expressions.booleanPath(fullPath);
       case INTEGER -> Expressions.numberPath(Integer.class, fullPath);
+      case DOUBLE -> Expressions.numberPath(Double.class, fullPath);
       case OFFSET_DATE_TIME -> Expressions.datePath(LocalDate.class, fullPath);
       case ENUM -> Expressions.stringPath(fullPath);
     };
@@ -255,6 +256,7 @@ public class PredicateGeneratorService {
         case STRING -> pathBuilder.getString(attributeName);
         case BOOLEAN -> pathBuilder.getBoolean(attributeName);
         case INTEGER -> pathBuilder.getNumber(attributeName, Integer.class);
+        case DOUBLE -> pathBuilder.getNumber(attributeName, Double.class);
         case OFFSET_DATE_TIME -> pathBuilder.getDate(attributeName, LocalDate.class);
         case ENUM -> pathBuilder.getSimple(attributeName, String.class);
       };
@@ -285,10 +287,7 @@ public class PredicateGeneratorService {
 
     // Создаем типизированные константы
     return switch (value.getValueType()) {
-      case STRING -> Expressions.constant(valueObj);
-      case BOOLEAN -> Expressions.constant(valueObj);
-      case INTEGER -> Expressions.constant(valueObj);
-      case OFFSET_DATE_TIME -> Expressions.constant(valueObj);
+      case STRING, BOOLEAN, INTEGER, OFFSET_DATE_TIME, DOUBLE -> Expressions.constant(valueObj);
       case ENUM -> {
         Class<?> enumClass = Class.forName(((MetaEnumValue) valueObj).getMetaEnum().getClassName());
         Method valueOfMethod = Enum.class.getMethod("valueOf", Class.class, String.class);

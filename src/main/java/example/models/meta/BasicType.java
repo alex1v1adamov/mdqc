@@ -5,5 +5,6 @@ public enum BasicType {
   BOOLEAN,
   INTEGER,
   OFFSET_DATE_TIME,
-  ENUM
+  ENUM,
+  DOUBLE
 }

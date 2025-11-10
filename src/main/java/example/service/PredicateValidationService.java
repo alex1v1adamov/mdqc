@@ -647,7 +647,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     if (value.getStringValue() != null) filledFields++;
     if (value.getBooleanValue() != null) filledFields++;
     if (value.getIntegerValue() != null) filledFields++;
-    if (value.getLongValue() != null) filledFields++;
+    if (value.getDoubleValue() != null) filledFields++;
     if (value.getOffsetDateTimeValue() != null) filledFields++;
     if (value.getTimestampValue() != null) filledFields++;
     if (value.getEnumValue() != null) filledFields++;
