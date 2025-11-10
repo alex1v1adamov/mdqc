@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -422,7 +424,8 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
         || javaType == Double.class
         || javaType == int.class
         || javaType.isEnum()
-        || javaType == OffsetDateTime.class;
+        || javaType == OffsetDateTime.class
+        || javaType == Point.class;
   }
 
   private BasicType determineBasicType(Class<?> javaType) {
@@ -434,6 +437,8 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
       return BasicType.INTEGER;
     } else if (javaType == Double.class) {
       return BasicType.DOUBLE;
+    } else if (javaType == Point.class) {
+      return BasicType.POINT;
     } else if (javaType.isEnum()) {
       return BasicType.ENUM;
     }

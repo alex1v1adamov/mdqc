@@ -18,6 +18,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.locationtech.jts.geom.Point;
 
 /* Универсальное хранилище значений для предикатов
  */
@@ -59,6 +60,9 @@ public class PredicateNodeValue {
   @Column(name = "double_value")
   private Double doubleValue;
 
+  @Column(name = "point_value")
+  private Point pointValue;
+
   /**
    * Значение перечисления ПРАВИЛА: - Используется ТОЛЬКО когда valueType = ENUM -
    * metaEnumValue.metaEnum должен соответствовать metaAttribute.metaEnum - Запрещено для других
@@ -99,6 +103,7 @@ public class PredicateNodeValue {
       case INTEGER -> this.integerValue = (Integer) value;
       case OFFSET_DATE_TIME -> this.offsetDateTimeValue = (OffsetDateTime) value;
       case ENUM -> this.enumValue = (MetaEnumValue) value;
+      case POINT -> this.pointValue = (Point) value;
     }
   }
 
@@ -112,6 +117,7 @@ public class PredicateNodeValue {
       case OFFSET_DATE_TIME -> offsetDateTimeValue;
       case ENUM -> enumValue;
       case DOUBLE -> doubleValue;
+      case POINT -> pointValue;
     };
   }
 }

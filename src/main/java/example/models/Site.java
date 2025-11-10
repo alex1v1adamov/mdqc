@@ -58,5 +58,5 @@ public class Site {
   //        )
   //
 
-  Point geometry;
+    private Point geometry;
 }

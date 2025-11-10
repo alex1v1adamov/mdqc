@@ -6,5 +6,6 @@ public enum BasicType {
   INTEGER,
   OFFSET_DATE_TIME,
   ENUM,
-  DOUBLE
+  DOUBLE,
+  POINT
 }
