@@ -11,7 +11,7 @@ import example.models.policy.Permission;
 import example.models.policy.QPermission;
 import example.models.policy.UserRole;
 import example.repo.PermissionRepository;
-import example.service.PredicateGeneratorService;
+import example.service.generator.PredicateGeneratorService;
 import io.vavr.collection.Stream;
 import jakarta.persistence.EntityManager;
 import java.lang.reflect.Field;

@@ -8,7 +8,7 @@ import example.models.predicate.PredicateDefinition;
 import example.repo.MetaEntityRepository;
 import example.repo.PredicateDefinitionRepository;
 import example.service.validation.MetaEntityValidationService;
-import example.service.PredicateGeneratorService;
+import example.service.generator.PredicateGeneratorService;
 import example.service.PredicateStringConverter;
 import example.service.validation.PredicateValidationService;
 import example.service.validation.ValidationResult;
