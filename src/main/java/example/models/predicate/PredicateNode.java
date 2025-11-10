@@ -11,9 +11,11 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
@@ -106,7 +108,12 @@ public class PredicateNode {
    * operatorType = IN или NOT_IN - Минимум одно значение - Все значения должны быть одного типа -
    * Запрещено для других типов операторов - Если заполнено, то value должен быть null
    */
-  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-  @JoinColumn(name = "predicate_node_id")
+  @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @JoinTable(
+      name = "predicate_node_in_values",
+      schema = "predicate",
+      joinColumns = @JoinColumn(name = "predicate_node_id"),
+      inverseJoinColumns = @JoinColumn(name = "node_value_id"))
+  @OrderColumn(name = "value_order")
   private List<PredicateNodeValue> inValues = new ArrayList<>();
 }

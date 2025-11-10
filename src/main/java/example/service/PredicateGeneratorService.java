@@ -16,6 +16,8 @@ import example.models.predicate.PredicateNodeValue;
 import example.models.predicate.PredicatePathExpression;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
@@ -94,6 +96,12 @@ public class PredicateGeneratorService {
       return buildBetweenPredicate(node, entityPath);
     }
 
+    // Специальная обработка для оператора IN
+    if (node.getOperatorType() == OperatorType.IN
+        || node.getOperatorType() == OperatorType.NOT_IN) {
+      return buildInPredicate(node, entityPath);
+    }
+
     // Для остальных операторов сравнения
     Expression<?> left = buildLeftOperandExpression(node, entityPath);
     if (left == null) return null;
@@ -118,6 +126,54 @@ public class PredicateGeneratorService {
     };
   }
 
+  private BooleanExpression buildInPredicate(PredicateNode node, PathBuilder<?> entityPath) {
+    Expression<?> attributeExpression = buildAttributeExpression(node, entityPath);
+    if (attributeExpression == null) return null;
+
+    // Получаем список значений для оператора IN
+    List<Expression<?>> inValues = buildInValues(node);
+    if (inValues.isEmpty()) {
+      throw new IllegalArgumentException("IN operator requires at least one value");
+    }
+
+    // Создаем выражение IN
+    BooleanExpression inExpression =
+        Expressions.predicate(
+            Ops.IN, attributeExpression, Expressions.list(inValues.toArray(new Expression[0])));
+
+    // Для NOT_IN инвертируем выражение
+    return node.getOperatorType() == OperatorType.NOT_IN ? inExpression.not() : inExpression;
+  }
+
+  private List<Expression<?>> buildInValues(PredicateNode node) {
+    if (node.getInValues() == null || node.getInValues().isEmpty()) {
+      throw new IllegalArgumentException("IN operator requires inValues list");
+    }
+
+    return node.getInValues().stream()
+        .map(this::buildConstantExpressionFromValue)
+        .collect(Collectors.toList());
+  }
+
+  @SneakyThrows
+  private Expression<?> buildConstantExpressionFromValue(PredicateNodeValue value) {
+    if (value == null) return null;
+
+    Object valueObj = value.getValue();
+    if (valueObj == null) return null;
+
+    // Создаем типизированные константы
+    return switch (value.getValueType()) {
+      case STRING, BOOLEAN, INTEGER, OFFSET_DATE_TIME, DOUBLE -> Expressions.constant(valueObj);
+      case ENUM -> {
+        Class<?> enumClass = Class.forName(((MetaEnumValue) valueObj).getMetaEnum().getClassName());
+        Method valueOfMethod = Enum.class.getMethod("valueOf", Class.class, String.class);
+        Object invoke = valueOfMethod.invoke(null, enumClass, ((MetaEnumValue) valueObj).getName());
+        yield Expressions.constant(invoke);
+      }
+    };
+  }
+
   private BooleanExpression buildBetweenPredicate(PredicateNode node, PathBuilder<?> entityPath) {
     Expression<?> attributeExpression = buildAttributeExpression(node, entityPath);
     if (attributeExpression == null) return null;
@@ -131,7 +187,6 @@ public class PredicateGeneratorService {
     }
 
     // Создаем BETWEEN предикат
-    // QueryDSL ожидает структуру: attribute.between(lower, upper)
     return Expressions.predicate(Ops.BETWEEN, attributeExpression, lowerBound, upperBound);
   }
 
@@ -156,10 +211,24 @@ public class PredicateGeneratorService {
   }
 
   private Expression<?> buildRightOperandExpression(PredicateNode node, PathBuilder<?> entityPath) {
+    // Для операторов IN и NOT_IN правый операнд не используется (используется inValues)
+    if (node.getOperatorType() == OperatorType.IN
+        || node.getOperatorType() == OperatorType.NOT_IN) {
+      return null;
+    }
+
+    // Для унарных операторов (IS_NULL, IS_NOT_NULL) правый операнд не нужен
+    if (node.getOperatorType() == OperatorType.IS_NULL
+        || node.getOperatorType() == OperatorType.IS_NOT_NULL) {
+      return null;
+    }
+
     if (node.getRightOperand() != null) {
       return buildOperandExpression(node.getRightOperand(), entityPath);
     }
-    throw new IllegalArgumentException("COMPARISON_OPERATOR must have rightOperand");
+
+    throw new IllegalArgumentException(
+        "COMPARISON_OPERATOR must have rightOperand for operator: " + node.getOperatorType());
   }
 
   private Expression<?> buildAttributeExpression(PredicateNode node, PathBuilder<?> entityPath) {
