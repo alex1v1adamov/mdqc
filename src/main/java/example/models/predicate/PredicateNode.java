@@ -54,15 +54,7 @@ public class PredicateNode {
   @Column(name = "operator_type")
   private OperatorType operatorType;
 
-  // === ССЫЛКА НА АТТРИБУТ ===
-  /**
-   * Прямая ссылка на мета-атрибут ПРАВИЛА: - Используется ТОЛЬКО когда pathExpression = null - Для
-   * COMPARISON_OPERATOR: атрибут для сравнения - Для PATH_EXPRESSION: корневой атрибут (если путь
-   * состоит из одного сегмента) - Запрещено для LOGICAL_OPERATOR и VALUE_CONSTANT
-   */
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "meta_attribute_id")
-  private MetaAttribute metaAttribute;
+
 
   /**
    * Путь к атрибуту через связи ПРАВИЛА: - Обязательно для nodeType = PATH_EXPRESSION - Для
@@ -103,11 +95,15 @@ public class PredicateNode {
   @JoinColumn(name = "right_operand_id")
   private PredicateNode rightOperand;
 
-  /**
-   * Множественные значения для оператора IN ПРАВИЛА: - Обязательно для COMPARISON_OPERATOR с
-   * operatorType = IN или NOT_IN - Минимум одно значение - Все значения должны быть одного типа -
-   * Запрещено для других типов операторов - Если заполнено, то value должен быть null
-   */
+    /**
+     * Множественные значения для операторов IN, NOT_IN и BETWEEN
+     * ПРАВИЛА:
+     * - Для IN/NOT_IN: минимум одно значение
+     * - Для BETWEEN: РОВНО два значения (первое - нижняя граница, второе - верхняя)
+     * - Все значения должны быть одного типа
+     * - Запрещено для других типов операторов
+     * - Если заполнено, то value должен быть null
+     */
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   @JoinTable(
       name = "predicate_node_in_values",

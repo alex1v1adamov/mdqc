@@ -156,9 +156,7 @@ class ExpressionBuilder {
   @Lazy private final ExpressionResolver expressionResolver;
 
   public Expression<?> buildLeftOperand(PredicateNode node, PathBuilder<?> entityPath) {
-    if (node.getMetaAttribute() != null) {
-      return createTypedExpression(entityPath, node.getMetaAttribute());
-    }
+    // ВСЕГДА используем pathExpression - убрана проверка на metaAttribute
     if (node.getPathExpression() != null) {
       return buildPathExpression(node.getPathExpression(), entityPath);
     }
@@ -232,30 +230,7 @@ class ExpressionBuilder {
     };
   }
 
-  private Expression<?> createTypedExpression(
-      PathBuilder<?> pathBuilder, MetaAttribute metaAttribute) {
-    String attributeName = metaAttribute.getName();
-
-    if (metaAttribute.getAttributeCategory() == AttributeCategory.BASIC) {
-      return switch (metaAttribute.getBasicType()) {
-        case STRING -> pathBuilder.getString(attributeName);
-        case BOOLEAN -> pathBuilder.getBoolean(attributeName);
-        case INTEGER -> pathBuilder.getNumber(attributeName, Integer.class);
-        case DOUBLE -> pathBuilder.getNumber(attributeName, Double.class);
-        case OFFSET_DATE_TIME -> pathBuilder.getDateTime(attributeName, OffsetDateTime.class);
-        case ENUM -> pathBuilder.getSimple(attributeName, String.class);
-        case POINT -> {
-          ComparablePath<Point> pointPath = pathBuilder.getComparable(attributeName, Point.class);
-          yield pointPath;
-        }
-        default ->
-            throw new IllegalArgumentException(
-                "Unsupported basic type: " + metaAttribute.getBasicType());
-      };
-    } else {
-      return pathBuilder.get(attributeName);
-    }
-  }
+  // Убрана старая реализация createTypedExpression, т.к. теперь всегда используем pathExpression
 }
 
 // OperatorProcessor.java
@@ -285,9 +260,14 @@ class OperatorProcessor {
   }
 
   private boolean isDistanceSphereOperation(PredicateNode node, Expression<?> left) {
-    if (node.getMetaAttribute() == null) return false;
+    // Теперь проверяем через pathExpression
+    if (node.getPathExpression() == null) return false;
 
-    boolean isPointAttribute = node.getMetaAttribute().getBasicType() == BasicType.POINT;
+    // Получаем конечный атрибут пути
+    MetaAttribute targetAttribute = getTargetAttribute(node.getPathExpression());
+    if (targetAttribute == null) return false;
+
+    boolean isPointAttribute = targetAttribute.getBasicType() == BasicType.POINT;
     boolean isDistanceOperator =
         node.getOperatorType() == OperatorType.LT
             || node.getOperatorType() == OperatorType.GT
@@ -300,6 +280,14 @@ class OperatorProcessor {
         left instanceof ComparablePath && Point.class.isAssignableFrom(left.getType());
 
     return isPointAttribute && isDistanceOperator && hasValidOperands && isPointExpression;
+  }
+
+  private MetaAttribute getTargetAttribute(PredicatePathExpression pathExpression) {
+    if (pathExpression.getPathAttributes().isEmpty()) {
+      return pathExpression.getRootAttribute();
+    } else {
+      return pathExpression.getPathAttributes().get(pathExpression.getPathAttributes().size() - 1);
+    }
   }
 
   private BooleanExpression buildDistanceSphereExpression(Expression<?> left, PredicateNode node) {
@@ -401,6 +389,7 @@ class OperatorProcessor {
 
   private BooleanExpression buildInExpression(
       Expression<?> left, List<PredicateNodeValue> inValues, boolean negate) {
+    // Для IN/NOT_IN должно быть минимум одно значение
     if (inValues == null || inValues.isEmpty()) {
       throw new IllegalArgumentException("IN operator requires at least one value");
     }
@@ -415,8 +404,15 @@ class OperatorProcessor {
   }
 
   private BooleanExpression buildBetweenExpression(Expression<?> left, PredicateNode node) {
-    Expression<?> fromValue = expressionBuilder.buildOperandExpression(node.getLeftOperand(), null);
-    Expression<?> toValue = expressionBuilder.buildOperandExpression(node.getRightOperand(), null);
+    // Используем inValues для BETWEEN - должно быть ровно 2 значения
+    if (node.getInValues() == null || node.getInValues().size() != 2) {
+      throw new IllegalArgumentException(
+          "BETWEEN operator requires exactly two values in inValues list");
+    }
+
+    // Первое значение - нижняя граница, второе - верхняя
+    Expression<?> fromValue = constantBuilder.buildConstant(node.getInValues().get(0));
+    Expression<?> toValue = constantBuilder.buildConstant(node.getInValues().get(1));
 
     if (fromValue == null || toValue == null) {
       throw new IllegalArgumentException("BETWEEN operator requires both from and to values");
@@ -497,11 +493,8 @@ class ValueConstantHandler implements NodeHandler {
 class HandlerConfiguration {
 
   private final LogicalOperatorHandler logicalOperatorHandler;
-
   private final ComparisonOperatorHandler comparisonOperatorHandler;
-
   private final PathExpressionHandler pathExpressionHandler;
-
   private final ValueConstantHandler valueConstantHandler;
 
   @Bean

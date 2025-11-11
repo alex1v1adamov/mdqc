@@ -139,9 +139,9 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     }
 
     // Запрещенные поля для LOGICAL_OPERATOR
-    if (node.getMetaAttribute() != null) {
-      errors.add("LOGICAL_OPERATOR cannot have metaAttribute");
-    }
+//    if (node.getMetaAttribute() != null) {
+//      errors.add("LOGICAL_OPERATOR cannot have metaAttribute");
+//    }
 
     if (node.getPathExpression() != null) {
       errors.add("LOGICAL_OPERATOR cannot have pathExpression");
@@ -168,7 +168,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     }
 
     // Проверка наличия атрибута или path expression
-    boolean hasAttribute = node.getMetaAttribute() != null;
+    boolean hasAttribute = /*node.getMetaAttribute() != null;*/ false;
     boolean hasPathExpression = node.getPathExpression() != null;
     boolean hasLeftOperand = node.getLeftOperand() != null;
 
@@ -300,14 +300,14 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
   /** Получает целевой атрибут для оператора сравнения */
   private MetaAttribute getTargetAttribute(PredicateNode node) {
-    if (node.getMetaAttribute() != null) {
-      return node.getMetaAttribute();
-    } else if (node.getPathExpression() != null) {
-      return node.getPathExpression().getTargetAttribute();
-    } else if (node.getLeftOperand() != null
-        && node.getLeftOperand().getNodeType() == NodeType.PATH_EXPRESSION) {
-      return node.getLeftOperand().getPathExpression().getTargetAttribute();
-    }
+//    if (node.getMetaAttribute() != null) {
+//      return node.getMetaAttribute();
+//    } else if (node.getPathExpression() != null) {
+//      return node.getPathExpression().getTargetAttribute();
+//    } else if (node.getLeftOperand() != null
+//        && node.getLeftOperand().getNodeType() == NodeType.PATH_EXPRESSION) {
+//      return node.getLeftOperand().getPathExpression().getTargetAttribute();
+//    }
     return null;
   }
 
@@ -447,13 +447,14 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
       case VALUE_CONSTANT:
         return operand.getValue() != null ? operand.getValue().getValueType() : null;
       case PATH_EXPRESSION:
-        MetaAttribute targetAttr =
-            operand.getPathExpression() != null
-                ? operand.getPathExpression().getTargetAttribute()
-                : null;
-        return targetAttr != null && targetAttr.getAttributeCategory() == AttributeCategory.BASIC
-            ? targetAttr.getBasicType()
-            : null;
+//        MetaAttribute targetAttr =
+//            operand.getPathExpression() != null
+//                ? operand.getPathExpression().getTargetAttribute()
+//                : null;
+//        return targetAttr != null && targetAttr.getAttributeCategory() == AttributeCategory.BASIC
+//            ? targetAttr.getBasicType()
+//            : null;
+          return null;
       default:
         return null;
     }
@@ -533,9 +534,9 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
       errors.add("VALUE_CONSTANT cannot have operatorType");
     }
 
-    if (node.getMetaAttribute() != null) {
-      errors.add("VALUE_CONSTANT cannot have metaAttribute");
-    }
+//    if (node.getMetaAttribute() != null) {
+//      errors.add("VALUE_CONSTANT cannot have metaAttribute");
+//    }
 
     if (node.getPathExpression() != null) {
       errors.add("VALUE_CONSTANT cannot have pathExpression");
@@ -574,9 +575,9 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
       errors.add("PATH_EXPRESSION cannot have operatorType");
     }
 
-    if (node.getMetaAttribute() != null) {
-      errors.add("PATH_EXPRESSION cannot have metaAttribute when pathExpression is defined");
-    }
+//    if (node.getMetaAttribute() != null) {
+//      errors.add("PATH_EXPRESSION cannot have metaAttribute when pathExpression is defined");
+//    }
 
     if (node.getValue() != null) {
       errors.add("PATH_EXPRESSION cannot have value");
@@ -601,9 +602,9 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     List<String> errors = new ArrayList<>();
 
     // metaAttribute и pathExpression взаимоисключающие
-    if (node.getMetaAttribute() != null && node.getPathExpression() != null) {
-      errors.add("metaAttribute and pathExpression cannot both be set");
-    }
+//    if (node.getMetaAttribute() != null && node.getPathExpression() != null) {
+//      errors.add("metaAttribute and pathExpression cannot both be set");
+//    }
 
     // value и inValues взаимоисключающие
     if (node.getValue() != null && !node.getInValues().isEmpty()) {
@@ -736,23 +737,23 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     }
 
     // Валидация targetAttribute
-    if (pathExpression.getTargetAttribute() != null) {
-      if (pathExpression.getTargetAttribute().getAttributeCategory() != AttributeCategory.BASIC) {
-        errors.add("Target attribute must be BASIC category");
-      }
-
-      // targetAttribute должен соответствовать последнему атрибуту в цепочке
-      if (pathExpression.getPathAttributes() != null
-          && !pathExpression.getPathAttributes().isEmpty()) {
-
-        MetaAttribute lastAttribute =
-            pathExpression.getPathAttributes().get(pathExpression.getPathAttributes().size() - 1);
-
-        if (!pathExpression.getTargetAttribute().getId().equals(lastAttribute.getId())) {
-          errors.add("Target attribute must match the last attribute in path chain");
-        }
-      }
-    }
+//    if (pathExpression.getTargetAttribute() != null) {
+//      if (pathExpression.getTargetAttribute().getAttributeCategory() != AttributeCategory.BASIC) {
+//        errors.add("Target attribute must be BASIC category");
+//      }
+//
+//      // targetAttribute должен соответствовать последнему атрибуту в цепочке
+//      if (pathExpression.getPathAttributes() != null
+//          && !pathExpression.getPathAttributes().isEmpty()) {
+//
+//        MetaAttribute lastAttribute =
+//            pathExpression.getPathAttributes().get(pathExpression.getPathAttributes().size() - 1);
+//
+//        if (!pathExpression.getTargetAttribute().getId().equals(lastAttribute.getId())) {
+//          errors.add("Target attribute must match the last attribute in path chain");
+//        }
+//      }
+//    }
 
     return errors.isEmpty() ? ValidationResult.success() : ValidationResult.error(errors);
   }

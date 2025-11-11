@@ -431,61 +431,8 @@ alter table policy.permission_user_roles
 create index idx_permission_user_roles_permission_id
     on policy.permission_user_roles (permission_id);
 
-create function predicate.validate_path_expression() returns trigger
-    language plpgsql
-as
-$$
-BEGIN
-    -- Проверка что корневой атрибут имеет категорию ENTITY
-    IF NOT EXISTS (
-        SELECT 1 FROM meta.meta_attribute
-        WHERE id = NEW.root_attribute_id AND attribute_category = 'ENTITY'
-    ) THEN
-        RAISE EXCEPTION 'Root attribute must have ENTITY category';
-END IF;
+-- Убираем поле meta_attribute_id из predicate_node
+ALTER TABLE predicate.predicate_node DROP COLUMN meta_attribute_id;
 
-    -- Проверка что целевой атрибут имеет категорию BASIC (если указан)
-    IF NEW.target_attribute_id IS NOT NULL AND NOT EXISTS (
-        SELECT 1 FROM meta.meta_attribute
-        WHERE id = NEW.target_attribute_id AND attribute_category = 'BASIC'
-    ) THEN
-        RAISE EXCEPTION 'Target attribute must have BASIC category';
-END IF;
-
-RETURN NEW;
-END;
-$$;
-
-alter function predicate.validate_path_expression() owner to postgres;
-
-create trigger trg_validate_path_expression
-    before insert or update
-                         on predicate.predicate_path_expression
-                         for each row
-                         execute procedure predicate.validate_path_expression();
-
-create function predicate.validate_predicate_definition() returns trigger
-    language plpgsql
-as
-$$
-BEGIN
-    -- Проверка что корневой узел не VALUE_CONSTANT или PATH_EXPRESSION
-    IF NEW.root_node_id IS NOT NULL AND EXISTS (
-        SELECT 1 FROM predicate.predicate_node
-        WHERE id = NEW.root_node_id AND node_type IN ('VALUE_CONSTANT', 'PATH_EXPRESSION')
-    ) THEN
-        RAISE EXCEPTION 'Root node cannot be VALUE_CONSTANT or PATH_EXPRESSION';
-END IF;
-
-RETURN NEW;
-END;
-$$;
-
-alter function predicate.validate_predicate_definition() owner to postgres;
-
-create trigger trg_validate_predicate_definition
-    before insert or update
-                         on predicate.predicate_definition
-                         for each row
-                         execute procedure predicate.validate_predicate_definition();
-
+-- Убираем поле target_attribute_id из predicate_path_expression
+ALTER TABLE predicate.predicate_path_expression DROP COLUMN target_attribute_id;

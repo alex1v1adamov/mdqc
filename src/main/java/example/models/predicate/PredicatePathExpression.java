@@ -57,12 +57,5 @@ public class PredicatePathExpression {
   @OrderColumn(name = "attribute_order")
   private List<MetaAttribute> pathAttributes = new ArrayList<>();
 
-  /**
-   * Конечный атрибут (последний в цепочке) ПРАВИЛА: - Вычисляемое поле, должно соответствовать
-   * последнему pathAttributes - Если pathAttributes пуст, то равен rootAttribute - Всегда должен
-   * иметь category = BASIC (конечный атрибут) - Используется для оптимизации запросов
-   */
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "target_attribute_id")
-  private MetaAttribute targetAttribute;
+
 }

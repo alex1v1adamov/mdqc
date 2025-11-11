@@ -202,22 +202,7 @@ public class PredicateStringConverter {
     return String.format("%s BETWEEN %s AND %s", left, from, to);
   }
 
-  /** Конвертирует ссылку на атрибут */
-  private String convertAttributeReferenceToString(PredicateNode node) {
-    if (node.getMetaAttribute() == null) {
-      return "UNKNOWN_ATTRIBUTE";
-    }
 
-    // Получаем актуальный MetaAttribute из репозитория
-    return metaAttributeRepository
-        .findById(node.getMetaAttribute().getId())
-        .map(MetaAttribute::getName)
-        .orElseGet(
-            () -> {
-              log.warn("MetaAttribute not found: {}", node.getMetaAttribute().getId());
-              return "MISSING_ATTRIBUTE_" + node.getMetaAttribute().getId();
-            });
-  }
 
   /** Конвертирует константное значение */
   private String convertValueConstantToString(PredicateNode node) {
