@@ -59,12 +59,12 @@ spring:
       naming:
         physical-strategy: 'org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl'
   datasource:
-    url: 'jdbc:postgresql://localhost:8432/mdqc'
+    url: 'jdbc:postgresql://localhost:8432/postgres'
     username: 'postgres'
     password: '1qaz2wsx!!'
     driver-class-name: org.postgresql.Driver
   liquibase:
-    enabled: false
+    enabled: true
     change-log: 'classpath:db/changelog/changelog.xml'
 
 server:

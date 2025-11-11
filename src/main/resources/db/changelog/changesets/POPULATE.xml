@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+    <!-- Заполнение мета-данных -->
+    <changeSet id="populate-meta-1" author="system">
+        <comment>Populate meta entities and enums</comment>
+        <sql>
+            -- Заполнение мета-сущностей (только классы, не enum)
+            INSERT INTO meta.meta_entity (id, name)
+            VALUES ('550e8400-e29b-41d4-a716-446655440001', 'example.models.BaseStation'),
+                   ('550e8400-e29b-41d4-a716-446655440002', 'example.models.Site');
+
+            -- Заполнение мета-перечисления BsStatus
+            INSERT INTO meta.meta_enum (id, name, description, class_name)
+            VALUES ('660e8400-e29b-41d4-a716-446655440001', 'BsStatus', 'Статус базовой станции', 'example.models.BsStatus');
+
+            -- Заполнение значений перечисления BsStatus
+            INSERT INTO meta.meta_enum_value (id, name, storage_value, description, order_index, meta_enum_id)
+            VALUES ('770e8400-e29b-41d4-a716-446655440001', 'CREATED', 'CREATED', 'Создан', 0,
+                    '660e8400-e29b-41d4-a716-446655440001'),
+                   ('770e8400-e29b-41d4-a716-446655440002', 'ACTIVE', 'ACTIVE', 'Активен', 1,
+                    '660e8400-e29b-41d4-a716-446655440001'),
+                   ('770e8400-e29b-41d4-a716-446655440003', 'CANCELLED', 'CANCELLED', 'Отменен', 2,
+                    '660e8400-e29b-41d4-a716-446655440001');
+        </sql>
+    </changeSet>
+
+    <changeSet id="populate-meta-2" author="system">
+        <comment>Populate meta attributes for BaseStation and Site</comment>
+        <sql>
+            -- Заполнение мета-атрибутов для BaseStation
+            INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type, attribute_entity_type_id,
+                                             is_bidirectional, meta_enum_id)
+            VALUES
+                -- id - строковый идентификатор
+                ('880e8400-e29b-41d4-a716-446655440001', 'id', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR', 'BASIC',
+                 'STRING', NULL, false, NULL),
+
+                -- nameInNms - строковое поле
+                ('880e8400-e29b-41d4-a716-446655440002', 'nameInNms', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR', 'BASIC',
+                 'STRING', NULL, false, NULL),
+
+                -- site - связь ManyToOne с Site
+                ('880e8400-e29b-41d4-a716-446655440003', 'site', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR', 'ENTITY', NULL,
+                 '550e8400-e29b-41d4-a716-446655440002', false, NULL),
+
+                -- bsStatus - enum поле
+                ('880e8400-e29b-41d4-a716-446655440004', 'bsStatus', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR', 'BASIC',
+                 'ENUM', NULL, false, '660e8400-e29b-41d4-a716-446655440001');
+
+            -- Заполнение мета-атрибутов для Site
+            INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type, attribute_entity_type_id,
+                                             is_bidirectional, related_attribute_id)
+            VALUES
+                -- id - строковый идентификатор
+                ('880e8400-e29b-41d4-a716-446655440011', 'id', '550e8400-e29b-41d4-a716-446655440002', 'SINGULAR', 'BASIC',
+                 'STRING', NULL, false, NULL),
+
+                -- siteName - строковое поле
+                ('880e8400-e29b-41d4-a716-446655440012', 'siteName', '550e8400-e29b-41d4-a716-446655440002', 'SINGULAR', 'BASIC',
+                 'STRING', NULL, false, NULL),
+
+                -- isResearch - булево поле
+                ('880e8400-e29b-41d4-a716-446655440013', 'isResearch', '550e8400-e29b-41d4-a716-446655440002', 'SINGULAR', 'BASIC',
+                 'BOOLEAN', NULL, false, NULL),
+
+                -- baseStations - коллекция BaseStation (OneToMany)
+                ('880e8400-e29b-41d4-a716-446655440014', 'baseStations', '550e8400-e29b-41d4-a716-446655440002', 'PLURAL', 'ENTITY',
+                 NULL, '550e8400-e29b-41d4-a716-446655440001', true, '880e8400-e29b-41d4-a716-446655440003');
+
+            -- Обновляем обратную ссылку для bidirectional связи baseStations- site
+            UPDATE meta.meta_attribute
+            SET related_attribute_id = '880e8400-e29b-41d4-a716-446655440014', is_bidirectional = true
+
+            WHERE id = '880e8400-e29b-41d4-a716-446655440003';
+        </sql>
+    </changeSet>
+
+    <changeSet id="populate-meta-3" author="system">
+        <comment>Add additional meta attributes</comment>
+        <sql>
+            -- Добавляем мета-атрибут для bsDateTime в BaseStation
+            INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type, attribute_entity_type_id,
+                                             is_bidirectional, meta_enum_id)
+            VALUES ('880e8400-e29b-41d4-a716-446655440015', 'bsDateTime', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR',
+                    'BASIC', 'OFFSET_DATE_TIME', NULL, false, NULL);
+
+            -- Добавляем мета-атрибут rating в BaseStation
+            INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type, attribute_entity_type_id, is_bidirectional, meta_enum_id) VALUES
+                ('880e8400-e29b-41d4-a716-446655440016', 'rating', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR', 'BASIC', 'INTEGER', NULL, false, NULL);
+
+            -- Добавляем мета-атрибут coverageRadius в BaseStation
+            INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type, attribute_entity_type_id, is_bidirectional, meta_enum_id) VALUES
+                ('880e8400-e29b-41d4-a716-446655440018', 'coverageRadius', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR', 'BASIC', 'DOUBLE', NULL, false, NULL);
+
+            -- Добавляем мета-атрибут geometry в Site
+            INSERT INTO meta.meta_attribute
+            (id, name, entity_id, type, attribute_category, basic_type, meta_enum_id, attribute_entity_type_id, is_bidirectional, related_attribute_id)
+            VALUES
+                (
+                    '7ac5eb66-2582-418f-b052-e5f786d96a9a',
+                    'geometry',
+                    '550e8400-e29b-41d4-a716-446655440002',
+                    'SINGULAR',
+                    'BASIC',
+                    'POINT',
+                    NULL,
+                    NULL,
+                    false,
+                    NULL
+                );
+        </sql>
+    </changeSet>
+
+    <!-- Базовые предикаты -->
+    <changeSet id="populate-predicate-1" author="system">
+        <comment>Create basic predicates</comment>
+        <sql>
+            -- 1. Предикат: BaseStation с isResearch = true через навигацию site.isResearch
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id) VALUES
+                ('990e8400-e29b-41d4-a716-446655440001', 'ResearchBaseStations', '550e8400-e29b-41d4-a716-446655440001');
+
+            -- Создаем выражение пути: site.isResearch
+            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id, target_attribute_id) VALUES
+                ('aa0e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440003', '880e8400-e29b-41d4-a716-446655440013');
+
+            -- Добавляем атрибуты пути (isResearch)
+            INSERT INTO predicate.predicate_path_expression_attributes (path_expression_id, meta_attribute_id, attribute_order) VALUES
+                ('aa0e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440013', 0);
+
+            -- Создаем значение true
+            INSERT INTO predicate.predicate_node_value (id, boolean_value, value_type) VALUES
+                ('bb0e8400-e29b-41d4-a716-446655440001', true, 'BOOLEAN');
+
+            -- Создаем узел VALUE_CONSTANT для значения true
+            INSERT INTO predicate.predicate_node (id, node_type, value_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440001', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440001');
+
+            -- Создаем узел PATH_EXPRESSION для site.isResearch
+            INSERT INTO predicate.predicate_node (id, node_type, path_expression_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440002', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440001');
+
+            -- Создаем узел COMPARISON_OPERATOR для EQ сравнения
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440003', 'COMPARISON_OPERATOR', 'EQ', 'cc0e8400-e29b-41d4-a716-446655440002', 'cc0e8400-e29b-41d4-a716-446655440001');
+
+            -- Обновляем корневой узел предиката
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440003'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440001';
+        </sql>
+    </changeSet>
+
+    <changeSet id="populate-predicate-2" author="system">
+        <comment>Create status-based predicates</comment>
+        <sql>
+            -- 2. Предикат: BaseStation с определенным статусом (ACTIVE)
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id) VALUES
+                ('990e8400-e29b-41d4-a716-446655440002', 'ActiveBaseStations', '550e8400-e29b-41d4-a716-446655440001');
+
+            -- Создаем значение enum ACTIVE
+            INSERT INTO predicate.predicate_node_value (id, enum_value_id, value_type) VALUES
+                ('bb0e8400-e29b-41d4-a716-446655440002', '770e8400-e29b-41d4-a716-446655440002', 'ENUM');
+
+            -- Создаем узел VALUE_CONSTANT для enum значения
+            INSERT INTO predicate.predicate_node (id, node_type, value_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440004', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440002');
+
+            -- Создаем узел COMPARISON_OPERATOR для сравнения bsStatus = ACTIVE
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, meta_attribute_id, left_operand_id, right_operand_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440005', 'COMPARISON_OPERATOR', 'EQ', '880e8400-e29b-41d4-a716-446655440004', NULL, 'cc0e8400-e29b-41d4-a716-446655440004');
+
+            -- Обновляем корневой узел предиката
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440005'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440002';
+
+            -- 3. Сложный предикат: BaseStation с isResearch = true И статусом ACTIVE
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id) VALUES
+                ('990e8400-e29b-41d4-a716-446655440003', 'ActiveResearchBaseStations', '550e8400-e29b-41d4-a716-446655440001');
+
+            -- Создаем узел LOGICAL_OPERATOR для AND
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440006', 'LOGICAL_OPERATOR', 'AND', 'cc0e8400-e29b-41d4-a716-446655440003', 'cc0e8400-e29b-41d4-a716-446655440005');
+
+            -- Обновляем корневой узел предиката
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440006'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440003';
+        </sql>
+    </changeSet>
+
+    <!-- Предикаты с разными типами данных -->
+    <changeSet id="populate-predicate-datetime" author="system">
+        <comment>Create datetime-based predicate</comment>
+        <sql>
+            -- 4. Предикат: BaseStation с bsDateTime после определенной даты
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
+            VALUES ('990e8400-e29b-41d4-a716-446655440004', 'RecentBaseStations', '550e8400-e29b-41d4-a716-446655440001');
+
+            -- Создаем значение даты (например, 2024-01-01 00:00:00+00)
+            INSERT INTO predicate.predicate_node_value (id, date_value, value_type)
+            VALUES ('bb0e8400-e29b-41d4-a716-446655440004', '2024-01-01 00:00:00+00', 'OFFSET_DATE_TIME');
+
+            -- Создаем узел VALUE_CONSTANT для значения даты
+            INSERT INTO predicate.predicate_node (id, node_type, value_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440007', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440004');
+
+            -- Создаем узел COMPARISON_OPERATOR для сравнения bsDateTime > '2024-01-01'
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, meta_attribute_id, left_operand_id,
+                                                  right_operand_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440008', 'COMPARISON_OPERATOR', 'GT', '880e8400-e29b-41d4-a716-446655440015',
+                    NULL, 'cc0e8400-e29b-41d4-a716-446655440007');
+
+            -- Обновляем корневой узел предиката
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440008'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440004';
+        </sql>
+    </changeSet>
+
+    <changeSet id="populate-predicate-integer" author="system">
+        <comment>Create integer-based predicate</comment>
+        <sql>
+            -- 7. Предикат: BaseStation с rating между 2 и 4
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id) VALUES
+                ('990e8400-e29b-41d4-a716-446655440007', 'MediumRatedBaseStations', '550e8400-e29b-41d4-a716-446655440001');
+
+            -- Создаем значения integer для диапазона
+            INSERT INTO predicate.predicate_node_value (id, integer_value, value_type) VALUES
+                                                                                           ('bb0e8400-e29b-41d4-a716-446655440008', 2, 'INTEGER'),
+                                                                                           ('bb0e8400-e29b-41d4-a716-446655440009', 4, 'INTEGER');
+
+            -- Создаем узлы VALUE_CONSTANT для значений integer
+            INSERT INTO predicate.predicate_node (id, node_type, value_id) VALUES
+                                                                               ('cc0e8400-e29b-41d4-a716-446655440014', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440008'),
+                                                                               ('cc0e8400-e29b-41d4-a716-446655440015', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440009');
+
+            -- Создаем узел COMPARISON_OPERATOR для BETWEEN
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, meta_attribute_id, left_operand_id, right_operand_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440016', 'COMPARISON_OPERATOR', 'BETWEEN', '880e8400-e29b-41d4-a716-446655440016', 'cc0e8400-e29b-41d4-a716-446655440014', 'cc0e8400-e29b-41d4-a716-446655440015');
+
+            -- Обновляем корневой узел предиката
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440016'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440007';
+        </sql>
+    </changeSet>
+
+    <changeSet id="populate-predicate-double" author="system">
+        <comment>Create double-based predicate</comment>
+        <sql>
+            -- 9. Предикат с DOUBLE типом
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id) VALUES
+                ('990e8400-e29b-41d4-a716-446655440010', 'WideCoverageBaseStations', '550e8400-e29b-41d4-a716-446655440001');
+
+            INSERT INTO predicate.predicate_node_value (id, double_value, value_type) VALUES
+                ('bb0e8400-e29b-41d4-a716-446655440014', 5.0, 'DOUBLE');
+
+            INSERT INTO predicate.predicate_node (id, node_type, value_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440023', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440014');
+
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, meta_attribute_id, left_operand_id, right_operand_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440024', 'COMPARISON_OPERATOR', 'GT', '880e8400-e29b-41d4-a716-446655440018', NULL, 'cc0e8400-e29b-41d4-a716-446655440023');
+
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440024'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440010';
+        </sql>
+    </changeSet>
+
+    <!-- Сложные предикаты -->
+    <changeSet id="populate-predicate-complex" author="system">
+        <comment>Create complex NOT NULL predicate</comment>
+        <sql>
+            -- Создаем предикат
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id) VALUES
+                ('990e8400-e29b-41d4-a716-446655440011', 'StationsWithNameOrRatingAndSiteName', '550e8400-e29b-41d4-a716-446655440001');
+
+            -- Часть 1: nameInNms IS_NOT_NULL
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, meta_attribute_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440025', 'COMPARISON_OPERATOR', 'IS_NOT_NULL', '880e8400-e29b-41d4-a716-446655440002');
+
+            -- Часть 2: rating IS_NOT_NULL
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, meta_attribute_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440026', 'COMPARISON_OPERATOR', 'IS_NOT_NULL', '880e8400-e29b-41d4-a716-446655440016');
+
+            -- Часть 3: (nameInNms IS_NOT_NULL OR rating IS_NOT_NULL)
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440027', 'LOGICAL_OPERATOR', 'OR', 'cc0e8400-e29b-41d4-a716-446655440025', 'cc0e8400-e29b-41d4-a716-446655440026');
+
+            -- Часть 4: site.siteName IS_NULL
+            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id, target_attribute_id) VALUES
+                ('aa0e8400-e29b-41d4-a716-446655440002', '880e8400-e29b-41d4-a716-446655440003', '880e8400-e29b-41d4-a716-446655440012');
+
+            INSERT INTO predicate.predicate_path_expression_attributes (path_expression_id, meta_attribute_id, attribute_order) VALUES
+                ('aa0e8400-e29b-41d4-a716-446655440002', '880e8400-e29b-41d4-a716-446655440012', 0);
+
+            INSERT INTO predicate.predicate_node (id, node_type, path_expression_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440028', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440002');
+
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440029', 'COMPARISON_OPERATOR', 'IS_NULL', 'cc0e8400-e29b-41d4-a716-446655440028');
+
+            -- Часть 5: NOT (site.siteName IS_NULL)
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440030', 'LOGICAL_OPERATOR', 'NOT', 'cc0e8400-e29b-41d4-a716-446655440029');
+
+            -- Часть 6: (nameInNms IS_NOT_NULL OR rating IS_NOT_NULL) AND NOT (site.siteName IS_NULL)
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440031', 'LOGICAL_OPERATOR', 'AND', 'cc0e8400-e29b-41d4-a716-446655440027', 'cc0e8400-e29b-41d4-a716-446655440030');
+
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440031'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440011';
+        </sql>
+    </changeSet>
+
+    <changeSet id="populate-predicate-in" author="system">
+        <comment>Create IN predicate</comment>
+        <sql>
+            -- Создаем предикат для BaseStation с bsStatus IN ('ACTIVE', 'CREATED')
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id) VALUES
+                ('990e8400-e29b-41d4-a716-446655440012', 'ActiveOrCreatedBaseStations', '550e8400-e29b-41d4-a716-446655440001');
+
+            -- Создаем узел COMPARISON_OPERATOR для IN
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, meta_attribute_id) VALUES
+                ('cc0e8400-e29b-41d4-a716-446655440032', 'COMPARISON_OPERATOR', 'IN', '880e8400-e29b-41d4-a716-446655440004');
+
+            -- Создаем значения для IN списка (ACTIVE и CREATED)
+            INSERT INTO predicate.predicate_node_value (id, enum_value_id, value_type) VALUES
+                ('bb0e8400-e29b-41d4-a716-446655440015', '770e8400-e29b-41d4-a716-446655440002', 'ENUM');
+
+            INSERT INTO predicate.predicate_node_value (id, enum_value_id, value_type) VALUES
+                ('bb0e8400-e29b-41d4-a716-446655440016', '770e8400-e29b-41d4-a716-446655440001', 'ENUM');
+
+            -- Добавляем значения в IN список с порядком
+            INSERT INTO predicate.predicate_node_in_values (predicate_node_id, node_value_id, value_order) VALUES
+                                                                                                               ('cc0e8400-e29b-41d4-a716-446655440032', 'bb0e8400-e29b-41d4-a716-446655440015', 0),
+                                                                                                               ('cc0e8400-e29b-41d4-a716-446655440032', 'bb0e8400-e29b-41d4-a716-446655440016', 1);
+
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440032'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440012';
+        </sql>
+    </changeSet>
+
+    <changeSet id="populate-predicate-point" author="system">
+        <comment>Create POINT geometry predicate</comment>
+        <sql>
+            -- Очистка старых данных
+            DELETE FROM predicate.predicate_definition WHERE id = 'aa0e8400-e29b-41d4-a716-446655440020';
+            DELETE FROM predicate.predicate_node WHERE id IN (
+                                                              'ff0e8400-e29b-41d4-a716-446655440050',
+                                                              'ff0e8400-e29b-41d4-a716-446655440051',
+                                                              'ff0e8400-e29b-41d4-a716-446655440052',
+                                                              'ee0e8400-e29b-41d4-a716-446655440040',
+                                                              'ee0e8400-e29b-41d4-a716-446655440041',
+                                                              'ee0e8400-e29b-41d4-a716-446655440042'
+                );
+            DELETE FROM predicate.predicate_node_value WHERE id IN (
+                                                                    'dd0e8400-e29b-41d4-a716-446655440030',
+                                                                    'dd0e8400-e29b-41d4-a716-446655440031',
+                                                                    'dd0e8400-e29b-41d4-a716-446655440032'
+                );
+
+            -- Создание значений для предиката
+            INSERT INTO predicate.predicate_node_value (id, value_type, point_value) VALUES
+                ('dd0e8400-e29b-41d4-a716-446655440030', 'POINT', ST_GeomFromText('POINT(37.617494 55.755826)', 4326));
+
+            INSERT INTO predicate.predicate_node_value (id, value_type, double_value) VALUES
+                                                                                          ('dd0e8400-e29b-41d4-a716-446655440031', 'DOUBLE', 3000.0),
+                                                                                          ('dd0e8400-e29b-41d4-a716-446655440032', 'DOUBLE', 500.0);
+
+            -- Создание узлов-констант
+            INSERT INTO predicate.predicate_node (id, node_type, value_id) VALUES
+                                                                               ('ee0e8400-e29b-41d4-a716-446655440040', 'VALUE_CONSTANT', 'dd0e8400-e29b-41d4-a716-446655440030'),
+                                                                               ('ee0e8400-e29b-41d4-a716-446655440041', 'VALUE_CONSTANT', 'dd0e8400-e29b-41d4-a716-446655440031'),
+                                                                               ('ee0e8400-e29b-41d4-a716-446655440042', 'VALUE_CONSTANT', 'dd0e8400-e29b-41d4-a716-446655440032');
+
+            -- Создание операторов для геометрии
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, meta_attribute_id, left_operand_id, right_operand_id) VALUES
+                ('ff0e8400-e29b-41d4-a716-446655440050', 'COMPARISON_OPERATOR', 'LT', '7ac5eb66-2582-418f-b052-e5f786d96a9a', 'ee0e8400-e29b-41d4-a716-446655440040', 'ee0e8400-e29b-41d4-a716-446655440041');
+
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, meta_attribute_id, left_operand_id, right_operand_id) VALUES
+                ('ff0e8400-e29b-41d4-a716-446655440051', 'COMPARISON_OPERATOR', 'GT', '7ac5eb66-2582-418f-b052-e5f786d96a9a', 'ee0e8400-e29b-41d4-a716-446655440040', 'ee0e8400-e29b-41d4-a716-446655440042');
+
+            -- Создание корневого логического оператора AND
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id) VALUES
+                ('ff0e8400-e29b-41d4-a716-446655440052', 'LOGICAL_OPERATOR', 'AND', 'ff0e8400-e29b-41d4-a716-446655440050', 'ff0e8400-e29b-41d4-a716-446655440051');
+
+            -- Создание определения предиката
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id, root_node_id) VALUES
+                ('aa0e8400-e29b-41d4-a716-446655440020', 'SiteGeometryDistanceFilter', '550e8400-e29b-41d4-a716-446655440002', 'ff0e8400-e29b-41d4-a716-446655440052');
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
