@@ -14,18 +14,18 @@
             VALUES ('550e8400-e29b-41d4-a716-446655440001', 'example.models.Pet'),
                    ('550e8400-e29b-41d4-a716-446655440002', 'example.models.Clinic');
 
-            -- Заполнение мета-перечисления PetStatus
+            -- Заполнение мета-перечисления PetType
             INSERT INTO meta.meta_enum (id, name, description, class_name)
-            VALUES ('660e8400-e29b-41d4-a716-446655440001', 'PetStatus', 'Статус базовой станции',
-                    'example.models.PetStatus');
+            VALUES ('660e8400-e29b-41d4-a716-446655440001', 'PetType', 'питомца',
+                    'example.models.PetType');
 
-            -- Заполнение значений перечисления PetStatus
+            -- Заполнение значений перечисления PetType
             INSERT INTO meta.meta_enum_value (id, name, storage_value, description, order_index, meta_enum_id)
-            VALUES ('770e8400-e29b-41d4-a716-446655440001', 'CREATED', 'CREATED', 'Создан', 0,
+            VALUES ('770e8400-e29b-41d4-a716-446655440001', 'CAT', 'CAT', 'Кошка', 0,
                     '660e8400-e29b-41d4-a716-446655440001'),
-                   ('770e8400-e29b-41d4-a716-446655440002', 'ACTIVE', 'ACTIVE', 'Активен', 1,
+                   ('770e8400-e29b-41d4-a716-446655440002', 'DOG', 'DOG', 'Собака', 1,
                     '660e8400-e29b-41d4-a716-446655440001'),
-                   ('770e8400-e29b-41d4-a716-446655440003', 'CANCELLED', 'CANCELLED', 'Отменен', 2,
+                   ('770e8400-e29b-41d4-a716-446655440003', 'BIRD', 'BIRD', 'Птичка', 2,
                     '660e8400-e29b-41d4-a716-446655440001');
         </sql>
     </changeSet>
@@ -43,8 +43,8 @@
                  'BASIC',
                  'STRING', NULL, false, NULL),
 
-                -- nameInNms - строковое поле
-                ('880e8400-e29b-41d4-a716-446655440002', 'nameInNms', '550e8400-e29b-41d4-a716-446655440001',
+                -- nickname - строковое поле
+                ('880e8400-e29b-41d4-a716-446655440002', 'nickname', '550e8400-e29b-41d4-a716-446655440001',
                  'SINGULAR', 'BASIC',
                  'STRING', NULL, false, NULL),
 
@@ -53,8 +53,8 @@
                  'ENTITY', NULL,
                  '550e8400-e29b-41d4-a716-446655440002', false, NULL),
 
-                -- petStatus - enum поле
-                ('880e8400-e29b-41d4-a716-446655440004', 'petStatus', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR',
+                -- petType - enum поле
+                ('880e8400-e29b-41d4-a716-446655440004', 'petType', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR',
                  'BASIC',
                  'ENUM', NULL, false, '660e8400-e29b-41d4-a716-446655440001');
 
@@ -73,8 +73,8 @@
                  'BASIC',
                  'STRING', NULL, false, NULL),
 
-                -- isResearch - булево поле
-                ('880e8400-e29b-41d4-a716-446655440013', 'isResearch', '550e8400-e29b-41d4-a716-446655440002',
+                -- isOpen - булево поле
+                ('880e8400-e29b-41d4-a716-446655440013', 'isOpen', '550e8400-e29b-41d4-a716-446655440002',
                  'SINGULAR', 'BASIC',
                  'BOOLEAN', NULL, false, NULL),
 
@@ -108,10 +108,10 @@
             VALUES ('880e8400-e29b-41d4-a716-446655440016', 'rating', '550e8400-e29b-41d4-a716-446655440001',
                     'SINGULAR', 'BASIC', 'INTEGER', NULL, false, NULL);
 
-            -- Добавляем мета-атрибут coverageRadius в Pet
+            -- Добавляем мета-атрибут loudRadius в Pet
             INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type,
                                              attribute_entity_type_id, is_bidirectional, meta_enum_id)
-            VALUES ('880e8400-e29b-41d4-a716-446655440018', 'coverageRadius', '550e8400-e29b-41d4-a716-446655440001',
+            VALUES ('880e8400-e29b-41d4-a716-446655440018', 'loudRadius', '550e8400-e29b-41d4-a716-446655440001',
                     'SINGULAR', 'BASIC', 'DOUBLE', NULL, false, NULL);
 
             -- Добавляем мета-атрибут geometry в Clinic
@@ -135,16 +135,16 @@
     <changeSet id="populate-predicate-1" author="system">
         <comment>Create basic predicates using PATH_EXPRESSION only</comment>
         <sql>
-            -- 1. Предикат: Pet с isResearch = true через навигацию clinic.isResearch
+            -- 1. Предикат: Pet с isOpen = true через навигацию clinic.isOpen
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
             VALUES ('990e8400-e29b-41d4-a716-446655440001', 'ResearchPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
-            -- Создаем выражение пути: clinic.isResearch
+            -- Создаем выражение пути: clinic.isOpen
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440003');
 
-            -- Добавляем атрибуты пути (isResearch)
+            -- Добавляем атрибуты пути (isOpen)
             INSERT INTO predicate.predicate_path_expression_attributes (path_expression_id, meta_attribute_id, attribute_order)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440013', 0);
 
@@ -156,7 +156,7 @@
             INSERT INTO predicate.predicate_node (id, node_type, value_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440001', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440001');
 
-            -- Создаем узел PATH_EXPRESSION для clinic.isResearch
+            -- Создаем узел PATH_EXPRESSION для clinic.isOpen
             INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440002', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440001');
 
@@ -175,16 +175,16 @@
     <changeSet id="populate-predicate-2" author="system">
         <comment>Create status-based predicates using PATH_EXPRESSION</comment>
         <sql>
-            -- 2. Предикат: Pet с определенным статусом (ACTIVE) - простой атрибут через PATH_EXPRESSION
+            -- 2. Предикат: Pet с определенным статусом (DOG) - простой атрибут через PATH_EXPRESSION
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440002', 'ActivePets',
+            VALUES ('990e8400-e29b-41d4-a716-446655440002', 'DOGPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
-            -- Создаем выражение пути для простого атрибута petStatus (пустой path_attributes)
+            -- Создаем выражение пути для простого атрибута petType (пустой path_attributes)
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440003', '880e8400-e29b-41d4-a716-446655440004');
 
-            -- Создаем значение enum ACTIVE
+            -- Создаем значение enum DOG
             INSERT INTO predicate.predicate_node_value (id, enum_value_id, value_type)
             VALUES ('bb0e8400-e29b-41d4-a716-446655440002', '770e8400-e29b-41d4-a716-446655440002', 'ENUM');
 
@@ -192,11 +192,11 @@
             INSERT INTO predicate.predicate_node (id, node_type, value_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440004', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440002');
 
-            -- Создаем узел PATH_EXPRESSION для petStatus
+            -- Создаем узел PATH_EXPRESSION для petType
             INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440005', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440003');
 
-            -- Создаем узел COMPARISON_OPERATOR для сравнения petStatus = ACTIVE
+            -- Создаем узел COMPARISON_OPERATOR для сравнения petType = DOG
             INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440006', 'COMPARISON_OPERATOR', 'EQ',
                     'cc0e8400-e29b-41d4-a716-446655440005', 'cc0e8400-e29b-41d4-a716-446655440004');
@@ -206,9 +206,9 @@
             SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440006'
             WHERE id = '990e8400-e29b-41d4-a716-446655440002';
 
-            -- 3. Сложный предикат: Pet с isResearch = true И статусом ACTIVE
+            -- 3. Сложный предикат: Pet с isOpen = true И статусом DOG
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440003', 'ActiveResearchPets',
+            VALUES ('990e8400-e29b-41d4-a716-446655440003', 'DOGResearchPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
             -- Создаем узел LOGICAL_OPERATOR для AND
@@ -306,7 +306,7 @@
             VALUES ('990e8400-e29b-41d4-a716-446655440006', 'WideCoveragePets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
-            -- Создаем выражение пути для coverageRadius
+            -- Создаем выражение пути для loudRadius
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440006', '880e8400-e29b-41d4-a716-446655440018');
 
@@ -333,12 +333,12 @@
     <changeSet id="populate-predicate-complex" author="system">
         <comment>Create complex NOT NULL predicate using PATH_EXPRESSION</comment>
         <sql>
-            -- 7. Сложный предикат: nameInNms IS_NOT_NULL OR rating IS_NOT_NULL AND clinic.clinicName IS_NOT_NULL
+            -- 7. Сложный предикат: nickname IS_NOT_NULL OR rating IS_NOT_NULL AND clinic.clinicName IS_NOT_NULL
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
             VALUES ('990e8400-e29b-41d4-a716-446655440007', 'StationsWithNameOrRatingAndClinicName',
                     '550e8400-e29b-41d4-a716-446655440001');
 
-            -- Часть 1: nameInNms IS_NOT_NULL
+            -- Часть 1: nickname IS_NOT_NULL
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440007', '880e8400-e29b-41d4-a716-446655440002');
 
@@ -360,7 +360,7 @@
             VALUES ('cc0e8400-e29b-41d4-a716-446655440021', 'COMPARISON_OPERATOR', 'IS_NOT_NULL',
                     'cc0e8400-e29b-41d4-a716-446655440020');
 
-            -- Часть 3: (nameInNms IS_NOT_NULL OR rating IS_NOT_NULL)
+            -- Часть 3: (nickname IS_NOT_NULL OR rating IS_NOT_NULL)
             INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440022', 'LOGICAL_OPERATOR', 'OR',
                     'cc0e8400-e29b-41d4-a716-446655440019', 'cc0e8400-e29b-41d4-a716-446655440021');
@@ -379,7 +379,7 @@
             VALUES ('cc0e8400-e29b-41d4-a716-446655440024', 'COMPARISON_OPERATOR', 'IS_NOT_NULL',
                     'cc0e8400-e29b-41d4-a716-446655440023');
 
-            -- Часть 5: (nameInNms IS_NOT_NULL OR rating IS_NOT_NULL) AND clinic.clinicName IS_NOT_NULL
+            -- Часть 5: (nickname IS_NOT_NULL OR rating IS_NOT_NULL) AND clinic.clinicName IS_NOT_NULL
             INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440025', 'LOGICAL_OPERATOR', 'AND',
                     'cc0e8400-e29b-41d4-a716-446655440022', 'cc0e8400-e29b-41d4-a716-446655440024');
@@ -393,20 +393,20 @@
     <changeSet id="populate-predicate-in" author="system">
         <comment>Create IN predicate using PATH_EXPRESSION</comment>
         <sql>
-            -- 8. Предикат для Pet с petStatus IN ('ACTIVE', 'CREATED')
+            -- 8. Предикат для Pet с petType IN ('DOG', 'CAT')
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440008', 'ActiveOrCreatedPets',
+            VALUES ('990e8400-e29b-41d4-a716-446655440008', 'DOGOrCATPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
-            -- Создаем выражение пути для petStatus
+            -- Создаем выражение пути для petType
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440010', '880e8400-e29b-41d4-a716-446655440004');
 
-            -- Создаем узел PATH_EXPRESSION для petStatus
+            -- Создаем узел PATH_EXPRESSION для petType
             INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440026', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440010');
 
-            -- Создаем значения для IN списка (ACTIVE и CREATED)
+            -- Создаем значения для IN списка (DOG и CAT)
             INSERT INTO predicate.predicate_node_value (id, enum_value_id, value_type)
             VALUES ('bb0e8400-e29b-41d4-a716-446655440008', '770e8400-e29b-41d4-a716-446655440002', 'ENUM'),
                    ('bb0e8400-e29b-41d4-a716-446655440009', '770e8400-e29b-41d4-a716-446655440001', 'ENUM');

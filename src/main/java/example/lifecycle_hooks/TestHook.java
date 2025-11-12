@@ -7,7 +7,7 @@ import com.yahoo.elide.core.security.RequestScope;
 import example.models.Clinic;
 import java.util.Optional;
 
-/** alexander.adamov created on 30.10.2025 */
+
 public class TestHook implements LifeCycleHook<Clinic> {
 
   @Override

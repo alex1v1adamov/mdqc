@@ -20,7 +20,7 @@ alter type predicate.operator_type owner to postgres;
 
 create table vet.clinic
 (
-    is_research boolean,
+    is_open boolean,
     id          varchar(255) not null
         primary key,
     clinic_name   varchar(255),
@@ -34,20 +34,20 @@ create table vet.pet
 (
     id              varchar(255) not null
         primary key,
-    name_in_nms     varchar(255),
+    nickname     varchar(255),
     clinic_id         varchar(255)
         constraint fklqswy7od0wada8ep1ra6jqt20
             references vet.clinic,
     status          varchar(255)
-        constraint pet_status_check
+        constraint pet_type_check
             check ((status)::text = ANY
-        ((ARRAY ['CREATED'::character varying, 'ACTIVE'::character varying, 'CANCELLED'::character varying])::text[])),
+        ((ARRAY ['CAT'::character varying, 'DOG'::character varying, 'BIRD'::character varying])::text[])),
     bs_date_time    timestamp with time zone,
     rating          integer,
-    coverage_radius double precision
+    loud_radius double precision
 );
 
-comment on column vet.pet.rating is 'Рейтинг базовой станции (целое число)';
+comment on column vet.pet.rating is 'Рейтинг питомца (целое число)';
 
 alter table vet.pet
     owner to postgres;

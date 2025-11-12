@@ -44,8 +44,8 @@ public class Clinic {
   private String clinicName = "";
 
   @SubscriptionField
-  @Column(name = "is_research")
-  private Boolean isResearch;
+  @Column(name = "is_open")
+  private Boolean isOpen;
 
   @SubscriptionField
   @OneToMany(mappedBy = "clinic")

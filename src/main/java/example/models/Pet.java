@@ -27,20 +27,20 @@ import lombok.Setter;
 public class Pet {
   @Id private String id = "";
 
-  @Column(name = "name_in_nms")
-  private String nameInNms = "";
+  @Column(name = "nickname")
+  private String nickname = "";
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status")
-  PetStatus petStatus;
+  PetType petType;
 
   @Column(name = "bs_date_time")
   OffsetDateTime bsDateTime;
 
   Integer rating;
 
-  @Column(name = "coverage_radius")
-  Double coverageRadius;
+  @Column(name = "loud_radius")
+  Double loudRadius;
 
   @ManyToOne private Clinic clinic = null;
 }

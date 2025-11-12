@@ -25,11 +25,11 @@ public class MetaEnumValue {
   @Column(name = "id", updatable = false, nullable = false)
   private UUID id;
 
-  /** Имя значения (например, "ACTIVE") */
+  /** Имя значения (например, "DOG") */
   @Column(name = "name", nullable = false)
   private String name;
 
-  /** Значение для хранения в БД (например, "active", "ACT", 1) */
+  /** Значение для хранения в БД (например, "DOG", "ACT", 1) */
   @Column(name = "storage_value", nullable = false)
   private String storageValue;
 
