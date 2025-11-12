@@ -3709,7 +3709,7 @@
     text-decoration: none
 }
 
-.swagger-ui .link, .swagger-ui .link:active, .swagger-ui .link:focus, .swagger-ui .link:hover, .swagger-ui .link:link, .swagger-ui .link:visited {
+.swagger-ui .link, .swagger-ui .link:active, .swagger-ui .link:focus, .swagger-ui .link:hover, .swagger-ui .link:link, .swagger-ui .link:viclinicd {
     transition: color .15s ease-in
 }
 
@@ -9823,7 +9823,7 @@
     display: inline
 }
 
-.swagger-ui a.nostyle, .swagger-ui a.nostyle:visited {
+.swagger-ui a.nostyle, .swagger-ui a.nostyle:viclinicd {
     color: inherit;
     cursor: pointer;
     text-decoration: inherit

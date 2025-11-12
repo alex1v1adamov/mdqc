@@ -12,7 +12,7 @@
             -- Заполнение мета-сущностей (только классы, не enum)
             INSERT INTO meta.meta_entity (id, name)
             VALUES ('550e8400-e29b-41d4-a716-446655440001', 'example.models.BaseStation'),
-                   ('550e8400-e29b-41d4-a716-446655440002', 'example.models.Site');
+                   ('550e8400-e29b-41d4-a716-446655440002', 'example.models.Clinic');
 
             -- Заполнение мета-перечисления BsStatus
             INSERT INTO meta.meta_enum (id, name, description, class_name)
@@ -31,7 +31,7 @@
     </changeSet>
 
     <changeSet id="populate-meta-2" author="system">
-        <comment>Populate meta attributes for BaseStation and Site</comment>
+        <comment>Populate meta attributes for BaseStation and Clinic</comment>
         <sql>
             -- Заполнение мета-атрибутов для BaseStation
             INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type,
@@ -48,8 +48,8 @@
                  'SINGULAR', 'BASIC',
                  'STRING', NULL, false, NULL),
 
-                -- site - связь ManyToOne с Site
-                ('880e8400-e29b-41d4-a716-446655440003', 'site', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR',
+                -- clinic - связь ManyToOne с Clinic
+                ('880e8400-e29b-41d4-a716-446655440003', 'clinic', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR',
                  'ENTITY', NULL,
                  '550e8400-e29b-41d4-a716-446655440002', false, NULL),
 
@@ -58,7 +58,7 @@
                  'BASIC',
                  'ENUM', NULL, false, '660e8400-e29b-41d4-a716-446655440001');
 
-            -- Заполнение мета-атрибутов для Site
+            -- Заполнение мета-атрибутов для Clinic
             INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type,
                                              attribute_entity_type_id,
                                              is_bidirectional, related_attribute_id)
@@ -68,8 +68,8 @@
                  'BASIC',
                  'STRING', NULL, false, NULL),
 
-                -- siteName - строковое поле
-                ('880e8400-e29b-41d4-a716-446655440012', 'siteName', '550e8400-e29b-41d4-a716-446655440002', 'SINGULAR',
+                -- clinicName - строковое поле
+                ('880e8400-e29b-41d4-a716-446655440012', 'clinicName', '550e8400-e29b-41d4-a716-446655440002', 'SINGULAR',
                  'BASIC',
                  'STRING', NULL, false, NULL),
 
@@ -83,7 +83,7 @@
                  'PLURAL', 'ENTITY',
                  NULL, '550e8400-e29b-41d4-a716-446655440001', true, '880e8400-e29b-41d4-a716-446655440003');
 
-            -- Обновляем обратную ссылку для bidirectional связи baseStations- site
+            -- Обновляем обратную ссылку для bidirectional связи baseStations- clinic
             UPDATE meta.meta_attribute
             SET related_attribute_id = '880e8400-e29b-41d4-a716-446655440014',
                 is_bidirectional     = true
@@ -114,7 +114,7 @@
             VALUES ('880e8400-e29b-41d4-a716-446655440018', 'coverageRadius', '550e8400-e29b-41d4-a716-446655440001',
                     'SINGULAR', 'BASIC', 'DOUBLE', NULL, false, NULL);
 
-            -- Добавляем мета-атрибут geometry в Site
+            -- Добавляем мета-атрибут geometry в Clinic
             INSERT INTO meta.meta_attribute
             (id, name, entity_id, type, attribute_category, basic_type, meta_enum_id, attribute_entity_type_id,
              is_bidirectional, related_attribute_id)
@@ -135,12 +135,12 @@
     <changeSet id="populate-predicate-1" author="system">
         <comment>Create basic predicates using PATH_EXPRESSION only</comment>
         <sql>
-            -- 1. Предикат: BaseStation с isResearch = true через навигацию site.isResearch
+            -- 1. Предикат: BaseStation с isResearch = true через навигацию clinic.isResearch
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
             VALUES ('990e8400-e29b-41d4-a716-446655440001', 'ResearchBaseStations',
                     '550e8400-e29b-41d4-a716-446655440001');
 
-            -- Создаем выражение пути: site.isResearch
+            -- Создаем выражение пути: clinic.isResearch
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440003');
 
@@ -156,7 +156,7 @@
             INSERT INTO predicate.predicate_node (id, node_type, value_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440001', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440001');
 
-            -- Создаем узел PATH_EXPRESSION для site.isResearch
+            -- Создаем узел PATH_EXPRESSION для clinic.isResearch
             INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440002', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440001');
 
@@ -333,9 +333,9 @@
     <changeSet id="populate-predicate-complex" author="system">
         <comment>Create complex NOT NULL predicate using PATH_EXPRESSION</comment>
         <sql>
-            -- 7. Сложный предикат: nameInNms IS_NOT_NULL OR rating IS_NOT_NULL AND site.siteName IS_NOT_NULL
+            -- 7. Сложный предикат: nameInNms IS_NOT_NULL OR rating IS_NOT_NULL AND clinic.clinicName IS_NOT_NULL
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440007', 'StationsWithNameOrRatingAndSiteName',
+            VALUES ('990e8400-e29b-41d4-a716-446655440007', 'StationsWithNameOrRatingAndClinicName',
                     '550e8400-e29b-41d4-a716-446655440001');
 
             -- Часть 1: nameInNms IS_NOT_NULL
@@ -365,7 +365,7 @@
             VALUES ('cc0e8400-e29b-41d4-a716-446655440022', 'LOGICAL_OPERATOR', 'OR',
                     'cc0e8400-e29b-41d4-a716-446655440019', 'cc0e8400-e29b-41d4-a716-446655440021');
 
-            -- Часть 4: site.siteName IS_NOT_NULL
+            -- Часть 4: clinic.clinicName IS_NOT_NULL
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440009', '880e8400-e29b-41d4-a716-446655440003');
 
@@ -379,7 +379,7 @@
             VALUES ('cc0e8400-e29b-41d4-a716-446655440024', 'COMPARISON_OPERATOR', 'IS_NOT_NULL',
                     'cc0e8400-e29b-41d4-a716-446655440023');
 
-            -- Часть 5: (nameInNms IS_NOT_NULL OR rating IS_NOT_NULL) AND site.siteName IS_NOT_NULL
+            -- Часть 5: (nameInNms IS_NOT_NULL OR rating IS_NOT_NULL) AND clinic.clinicName IS_NOT_NULL
             INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440025', 'LOGICAL_OPERATOR', 'AND',
                     'cc0e8400-e29b-41d4-a716-446655440022', 'cc0e8400-e29b-41d4-a716-446655440024');
@@ -430,9 +430,9 @@
     <changeSet id="populate-predicate-geometry-distance-fixed" author="system">
         <comment>Create POINT geometry predicate using DISTANCE_SPHERE operator with new rules</comment>
         <sql>
-            -- 9. Предикат для Site geometry distance с DISTANCE_SPHERE по новым правилам
+            -- 9. Предикат для Clinic geometry distance с DISTANCE_SPHERE по новым правилам
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440009', 'SiteGeometryDistanceFilterNew',
+            VALUES ('990e8400-e29b-41d4-a716-446655440009', 'ClinicGeometryDistanceFilterNew',
                     '550e8400-e29b-41d4-a716-446655440002');
 
             -- === Создание значений для предиката ===

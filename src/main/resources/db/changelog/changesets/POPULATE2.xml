@@ -6,7 +6,7 @@
 
 
     <changeSet id="1" author="your-name">
-        <sqlFile path="file/site.sql" relativeToChangelogFile="true" splitStatements="false"
+        <sqlFile path="file/clinic.sql" relativeToChangelogFile="true" splitStatements="false"
                  stripComments="false"/>
     </changeSet>
     <changeSet id="2" author="your-name">

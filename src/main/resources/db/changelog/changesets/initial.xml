@@ -12,7 +12,7 @@
             EXTENSION IF NOT EXISTS "postgis";
 
         -- Создание схем
-            CREATE SCHEMA IF NOT EXISTS ri;
+            CREATE SCHEMA IF NOT EXISTS vet;
             CREATE SCHEMA IF NOT EXISTS meta;
             CREATE SCHEMA IF NOT EXISTS predicate;
             CREATE SCHEMA IF NOT EXISTS policy;

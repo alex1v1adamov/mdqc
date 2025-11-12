@@ -20,7 +20,7 @@ import lombok.Setter;
 
 @UpdatePermission(expression = "RSMD")
 @Include(name = "baseStation")
-@Table(schema = "ri", name = "base_station")
+@Table(schema = "vet", name = "base_station")
 @Entity
 @Getter
 @Setter
@@ -42,5 +42,5 @@ public class BaseStation {
   @Column(name = "coverage_radius")
   Double coverageRadius;
 
-  @ManyToOne private Site site = null;
+  @ManyToOne private Clinic clinic = null;
 }

@@ -28,7 +28,7 @@ import lombok.Setter;
 import org.locationtech.jts.geom.Point;
 
 @Include
-@Table(schema = "ri")
+@Table(schema = "vet")
 @Entity
 @Subscription
 @Data
@@ -36,19 +36,19 @@ import org.locationtech.jts.geom.Point;
 @UpdatePermission(expression = "RSMD")
 @Getter
 @Setter
-public class Site {
+public class Clinic {
   @Id private String id = "";
 
   @SubscriptionField
-  @Column(name = "site_name")
-  private String siteName = "";
+  @Column(name = "clinic_name")
+  private String clinicName = "";
 
   @SubscriptionField
   @Column(name = "is_research")
   private Boolean isResearch;
 
   @SubscriptionField
-  @OneToMany(mappedBy = "site")
+  @OneToMany(mappedBy = "clinic")
   @JsonIgnore
   private List<BaseStation> baseStations = new ArrayList<>();
 

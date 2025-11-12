@@ -18,26 +18,26 @@ create type predicate.operator_type as enum ('AND', 'OR', 'NOT', 'EQ', 'NE', 'GT
 
 alter type predicate.operator_type owner to postgres;
 
-create table ri.site
+create table vet.clinic
 (
     is_research boolean,
     id          varchar(255) not null
         primary key,
-    site_name   varchar(255),
+    clinic_name   varchar(255),
     geometry    geometry
 );
 
-alter table ri.site
+alter table vet.clinic
     owner to postgres;
 
-create table ri.base_station
+create table vet.base_station
 (
     id              varchar(255) not null
         primary key,
     name_in_nms     varchar(255),
-    site_id         varchar(255)
+    clinic_id         varchar(255)
         constraint fklqswy7od0wada8ep1ra6jqt20
-            references ri.site,
+            references vet.clinic,
     status          varchar(255)
         constraint base_station_status_check
             check ((status)::text = ANY
@@ -47,13 +47,13 @@ create table ri.base_station
     coverage_radius double precision
 );
 
-comment on column ri.base_station.rating is 'Рейтинг базовой станции (целое число)';
+comment on column vet.base_station.rating is 'Рейтинг базовой станции (целое число)';
 
-alter table ri.base_station
+alter table vet.base_station
     owner to postgres;
 
 create index idx_base_station_rating
-    on ri.base_station (rating);
+    on vet.base_station (rating);
 
 create table meta.meta_entity
 (

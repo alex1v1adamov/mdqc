@@ -22,7 +22,7 @@ public enum NodeType {
   /*
    * тип для навигации по связям
    * Выражение пути через связи между сущностями
-   * Например: site.isResearch
+   * Например: clinic.isResearch
    */
   PATH_EXPRESSION
 }

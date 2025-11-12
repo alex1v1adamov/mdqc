@@ -72,7 +72,7 @@ public class PredicateController {
             .findById(id)
             .orElseThrow(() -> new RuntimeException("Predicate not found"));
 
-    String entityName = predicate.getMetaEntity().getName(); // пример: example.models.Site
+    String entityName = predicate.getMetaEntity().getName(); // пример: example.models.Clinic
     Class<?> aClass = Class.forName(entityName);
     // Вместо Q-class создаем PathBuilder
     PathBuilder<?> entity = new PathBuilder<>(aClass, "entity");

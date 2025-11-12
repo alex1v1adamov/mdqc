@@ -69,11 +69,11 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     }
 
     // Проверка на циклические ссылки
-    if (context.getVisitedNodes().contains(node.getId())) {
+    if (context.getViclinicdNodes().contains(node.getId())) {
       errors.add("Cyclic reference detected in predicate nodes");
       return ValidationResult.error(errors);
     }
-    context.getVisitedNodes().add(node.getId());
+    context.getViclinicdNodes().add(node.getId());
 
     // Валидация в зависимости от типа узла
     switch (node.getNodeType()) {
@@ -700,10 +700,10 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
   // Контекст для отслеживания состояния валидации (например, циклических ссылок)
   private static class ValidationContext {
-    private final Set<UUID> visitedNodes = new HashSet<>();
+    private final Set<UUID> viclinicdNodes = new HashSet<>();
 
-    public Set<UUID> getVisitedNodes() {
-      return visitedNodes;
+    public Set<UUID> getViclinicdNodes() {
+      return viclinicdNodes;
     }
   }
 }
