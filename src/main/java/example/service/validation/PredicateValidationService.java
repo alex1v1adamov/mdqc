@@ -12,6 +12,7 @@ import example.models.predicate.PredicateNode;
 import example.models.predicate.PredicateNodeValue;
 import example.models.predicate.PredicatePathExpression;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -139,10 +140,6 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     }
 
     // Запрещенные поля для LOGICAL_OPERATOR
-//    if (node.getMetaAttribute() != null) {
-//      errors.add("LOGICAL_OPERATOR cannot have metaAttribute");
-//    }
-
     if (node.getPathExpression() != null) {
       errors.add("LOGICAL_OPERATOR cannot have pathExpression");
     }
@@ -165,134 +162,134 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     // operatorType обязателен для COMPARISON_OPERATOR
     if (node.getOperatorType() == null) {
       errors.add("COMPARISON_OPERATOR must have operatorType defined");
+      return errors;
     }
 
-    // Проверка наличия атрибута или path expression
-    boolean hasAttribute = /*node.getMetaAttribute() != null;*/ false;
+    // Проверка наличия path expression или left operand
     boolean hasPathExpression = node.getPathExpression() != null;
     boolean hasLeftOperand = node.getLeftOperand() != null;
 
-    // Специальная логика для BETWEEN оператора
-    if (node.getOperatorType() == OperatorType.BETWEEN) {
-      // BETWEEN требует metaAttribute и оба операнда
-      if (!hasAttribute) {
-        errors.add("BETWEEN operator must have metaAttribute defined");
-      }
-      if (node.getLeftOperand() == null || node.getRightOperand() == null) {
-        errors.add("BETWEEN operator must have both left and right operands");
-      }
-      if (hasPathExpression) {
-        errors.add("BETWEEN operator cannot have pathExpression");
-      }
-    } else {
-      // Для остальных операторов проверяем стандартные правила
-      if (!hasAttribute && !hasPathExpression && !hasLeftOperand) {
-        errors.add(
-            "COMPARISON_OPERATOR must have either metaAttribute, pathExpression or leftOperand");
-      }
+    if (!hasPathExpression && !hasLeftOperand) {
+      errors.add("COMPARISON_OPERATOR must have either pathExpression or leftOperand");
+    }
 
-      // Проверка взаимной исключительности (кроме BETWEEN)
-      if ((hasAttribute && hasPathExpression)
-          || (hasAttribute && hasLeftOperand)
-          || (hasPathExpression && hasLeftOperand)) {
-        errors.add(
-            "COMPARISON_OPERATOR can have only one of: metaAttribute, pathExpression, or leftOperand");
-      }
+    // Проверка взаимной исключительности
+    if (hasPathExpression && hasLeftOperand) {
+      errors.add("COMPARISON_OPERATOR can have only one of: pathExpression or leftOperand");
     }
 
     // Получаем целевой атрибут для проверки совместимости типов
     MetaAttribute targetAttribute = getTargetAttribute(node);
-    if (targetAttribute != null && node.getOperatorType() != null) {
+    if (targetAttribute != null) {
       errors.addAll(
           validateOperatorAttributeCompatibility(node.getOperatorType(), targetAttribute));
     }
 
-    // Валидация операндов
-    if (node.getOperatorType() != OperatorType.IS_NULL
-        && node.getOperatorType() != OperatorType.IS_NOT_NULL) {
-
-      // Для BETWEEN проверяем оба операнда
-      if (node.getOperatorType() == OperatorType.BETWEEN) {
-        if (node.getLeftOperand() == null || node.getRightOperand() == null) {
-          errors.add("BETWEEN operator must have both left and right operands");
-        } else {
-          ValidationResult leftResult = validatePredicateNode(node.getLeftOperand(), context);
-          if (!leftResult.isValid()) {
-            errors.add("Left operand: " + String.join(", ", leftResult.getErrors()));
-          }
-
-          ValidationResult rightResult = validatePredicateNode(node.getRightOperand(), context);
-          if (!rightResult.isValid()) {
-            errors.add("Right operand: " + String.join(", ", rightResult.getErrors()));
-          }
-
-          // Проверка совместимости типов для BETWEEN
-          if (targetAttribute != null) {
-            errors.addAll(
-                validateAttributeOperandCompatibility(targetAttribute, node.getLeftOperand()));
-            errors.addAll(
-                validateAttributeOperandCompatibility(targetAttribute, node.getRightOperand()));
-          }
-        }
-      } else {
-        // Для остальных операторов проверяем только правый операнд
-        if (node.getRightOperand() == null) {
-          errors.add("COMPARISON_OPERATOR must have rightOperand (except for IS_NULL/IS_NOT_NULL)");
-        } else {
-          ValidationResult rightResult = validatePredicateNode(node.getRightOperand(), context);
-          if (!rightResult.isValid()) {
-            errors.add("Right operand: " + String.join(", ", rightResult.getErrors()));
-          }
-
-          // Проверка совместимости типов атрибута и правого операнда
-          if (targetAttribute != null) {
-            errors.addAll(
-                validateAttributeOperandCompatibility(targetAttribute, node.getRightOperand()));
-          }
-        }
-      }
+    // Валидация операндов в зависимости от типа оператора
+    if (node.getOperatorType().requiresInValues()) {
+      // Для операторов с inValues (IN, NOT_IN, BETWEEN)
+      errors.addAll(validateInValuesOperator(node, targetAttribute));
+    } else if (node.getOperatorType() == OperatorType.IS_NULL
+        || node.getOperatorType() == OperatorType.IS_NOT_NULL) {
+      // Для NULL операторов
+      errors.addAll(validateNullOperator(node));
     } else {
-      // Для IS_NULL/IS_NOT_NULL правый операнд должен быть null
-      if (node.getRightOperand() != null) {
-        errors.add("IS_NULL/IS_NOT_NULL cannot have rightOperand");
+      // Для бинарных операторов
+      errors.addAll(validateBinaryOperator(node, context, targetAttribute));
+    }
+
+    return errors;
+  }
+
+  private List<String> validateInValuesOperator(PredicateNode node, MetaAttribute targetAttribute) {
+    List<String> errors = new ArrayList<>();
+
+    // Проверка наличия inValues
+    if (node.getInValues().isEmpty()) {
+      errors.add(node.getOperatorType() + " operator must have values in inValues");
+    }
+
+    // Проверка количества значений для BETWEEN
+    if (node.getOperatorType() == OperatorType.BETWEEN && node.getInValues().size() != 2) {
+      errors.add("BETWEEN operator requires exactly two values in inValues");
+    }
+
+    // Проверка типов в inValues
+    BasicType firstType = null;
+    for (PredicateNodeValue inValue : node.getInValues()) {
+      ValidationResult valueResult = validatePredicateNodeValue(inValue);
+      if (!valueResult.isValid()) {
+        errors.add("inValues: " + String.join(", ", valueResult.getErrors()));
+      }
+
+      if (firstType == null) {
+        firstType = inValue.getValueType();
+      } else if (firstType != inValue.getValueType()) {
+        errors.add("All values in inValues must be of the same type");
+        break;
       }
     }
 
-    // Валидация inValues для операторов IN/NOT_IN
-    if (node.getOperatorType() == OperatorType.IN
-        || node.getOperatorType() == OperatorType.NOT_IN) {
-      if (node.getInValues().isEmpty()) {
-        errors.add("IN/NOT_IN operators must have at least one value in inValues");
-      }
-      if (node.getValue() != null) {
-        errors.add("IN/NOT_IN operators cannot have value, use inValues instead");
-      }
+    // Проверка совместимости типа атрибута и типа значений
+    if (targetAttribute != null && firstType != null) {
+      errors.addAll(
+          validateInValuesTypeCompatibility(targetAttribute, firstType, node.getOperatorType()));
+    }
 
-      // Проверка типов в inValues
-      BasicType firstType = null;
-      for (PredicateNodeValue inValue : node.getInValues()) {
-        ValidationResult valueResult = validatePredicateNodeValue(inValue);
-        if (!valueResult.isValid()) {
-          errors.add("inValues: " + String.join(", ", valueResult.getErrors()));
-        }
+    // Проверка, что value не используется
+    if (node.getValue() != null) {
+      errors.add(node.getOperatorType() + " operator cannot have value, use inValues instead");
+    }
 
-        if (firstType == null) {
-          firstType = inValue.getValueType();
-        } else if (firstType != inValue.getValueType()) {
-          errors.add("All values in inValues must be of the same type");
-          break;
-        }
-      }
+    return errors;
+  }
 
-      // Проверка совместимости типа атрибута и типа значений IN
-      if (targetAttribute != null && firstType != null) {
-        errors.addAll(validateInValuesTypeCompatibility(targetAttribute, firstType));
-      }
+  private List<String> validateNullOperator(PredicateNode node) {
+    List<String> errors = new ArrayList<>();
+
+    // Для NULL операторов правый операнд должен быть null
+    if (node.getRightOperand() != null) {
+      errors.add("IS_NULL/IS_NOT_NULL cannot have rightOperand");
+    }
+
+    // value должен быть null
+    if (node.getValue() != null) {
+      errors.add("IS_NULL/IS_NOT_NULL cannot have value");
+    }
+
+    // inValues должен быть пуст
+    if (!node.getInValues().isEmpty()) {
+      errors.add("IS_NULL/IS_NOT_NULL cannot have inValues");
+    }
+
+    return errors;
+  }
+
+  private List<String> validateBinaryOperator(
+      PredicateNode node, ValidationContext context, MetaAttribute targetAttribute) {
+    List<String> errors = new ArrayList<>();
+
+    // Проверка правого операнда
+    if (node.getRightOperand() == null) {
+      errors.add(
+          "COMPARISON_OPERATOR must have rightOperand for operator: " + node.getOperatorType());
     } else {
-      // Для других операторов inValues должен быть пуст
-      if (!node.getInValues().isEmpty()) {
-        errors.add("inValues can only be used with IN/NOT_IN operators");
+      ValidationResult rightResult = validatePredicateNode(node.getRightOperand(), context);
+      if (!rightResult.isValid()) {
+        errors.add("Right operand: " + String.join(", ", rightResult.getErrors()));
       }
+
+      // Проверка совместимости типов атрибута и правого операнда
+      if (targetAttribute != null) {
+        errors.addAll(
+            validateAttributeOperandCompatibility(
+                targetAttribute, node.getRightOperand(), node.getOperatorType()));
+      }
+    }
+
+    // Проверка, что inValues не используется
+    if (!node.getInValues().isEmpty()) {
+      errors.add(node.getOperatorType() + " operator cannot have inValues");
     }
 
     return errors;
@@ -300,15 +297,23 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
   /** Получает целевой атрибут для оператора сравнения */
   private MetaAttribute getTargetAttribute(PredicateNode node) {
-//    if (node.getMetaAttribute() != null) {
-//      return node.getMetaAttribute();
-//    } else if (node.getPathExpression() != null) {
-//      return node.getPathExpression().getTargetAttribute();
-//    } else if (node.getLeftOperand() != null
-//        && node.getLeftOperand().getNodeType() == NodeType.PATH_EXPRESSION) {
-//      return node.getLeftOperand().getPathExpression().getTargetAttribute();
-//    }
+    if (node.getPathExpression() != null) {
+      return getLastAttributeFromPath(node.getPathExpression());
+    } else if (node.getLeftOperand() != null
+        && node.getLeftOperand().getNodeType() == NodeType.PATH_EXPRESSION) {
+      return getLastAttributeFromPath(node.getLeftOperand().getPathExpression());
+    }
     return null;
+  }
+
+  private MetaAttribute getLastAttributeFromPath(PredicatePathExpression pathExpression) {
+    if (pathExpression == null) return null;
+
+    if (pathExpression.getPathAttributes().isEmpty()) {
+      return pathExpression.getRootAttribute();
+    } else {
+      return pathExpression.getPathAttributes().get(pathExpression.getPathAttributes().size() - 1);
+    }
   }
 
   /** Проверка совместимости оператора и типа атрибута */
@@ -318,73 +323,26 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
     if (attribute.getAttributeCategory() != AttributeCategory.BASIC) {
       // Для ENTITY атрибутов допустимы только определенные операторы
-      switch (operatorType) {
-        case EQ, NE, IS_NULL, IS_NOT_NULL:
-          // Эти операторы допустимы для ENTITY атрибутов
-          break;
-        default:
-          errors.add(
-              String.format(
-                  "Operator %s cannot be used with ENTITY attribute '%s'",
-                  operatorType, attribute.getName()));
+      if (!operatorType.supportsEntityAttributes()) {
+        errors.add(
+            String.format(
+                "Operator %s cannot be used with ENTITY attribute '%s'",
+                operatorType, attribute.getName()));
       }
       return errors;
     }
 
-    // Для BASIC атрибутов проверяем в зависимости от basicType
+    // Для BASIC атрибутов проверяем совместимость с помощью OperatorType
     BasicType basicType = attribute.getBasicType();
     if (basicType == null) return errors;
 
-    switch (basicType) {
-      case BOOLEAN:
-        if (!isBooleanCompatibleOperator(operatorType)) {
-          errors.add(
-              String.format(
-                  "Operator %s cannot be used with BOOLEAN attribute '%s'. "
-                      + "Allowed operators: EQ, NE, IS_NULL, IS_NOT_NULL",
-                  operatorType, attribute.getName()));
-        }
-        break;
-
-      case STRING:
-        if (!isStringCompatibleOperator(operatorType)) {
-          errors.add(
-              String.format(
-                  "Operator %s cannot be used with STRING attribute '%s'. "
-                      + "Allowed operators: EQ, NE, LIKE, STARTS_WITH, ENDS_WITH, CONTAINS, IN, NOT_IN, IS_NULL, IS_NOT_NULL",
-                  operatorType, attribute.getName()));
-        }
-        break;
-
-      case INTEGER:
-        if (!isNumericCompatibleOperator(operatorType)) {
-          errors.add(
-              String.format(
-                  "Operator %s cannot be used with INTEGER attribute '%s'. "
-                      + "Allowed operators: EQ, NE, GT, LT, GOE, LOE, IN, NOT_IN, BETWEEN, IS_NULL, IS_NOT_NULL",
-                  operatorType, attribute.getName()));
-        }
-        break;
-
-      case OFFSET_DATE_TIME:
-        if (!isDateCompatibleOperator(operatorType)) {
-          errors.add(
-              String.format(
-                  "Operator %s cannot be used with DATE attribute '%s'. "
-                      + "Allowed operators: EQ, NE, GT, LT, GOE, LOE, BETWEEN, IS_NULL, IS_NOT_NULL",
-                  operatorType, attribute.getName()));
-        }
-        break;
-
-      case ENUM:
-        if (!isEnumCompatibleOperator(operatorType)) {
-          errors.add(
-              String.format(
-                  "Operator %s cannot be used with ENUM attribute '%s'. "
-                      + "Allowed operators: EQ, NE, IN, NOT_IN, IS_NULL, IS_NOT_NULL",
-                  operatorType, attribute.getName()));
-        }
-        break;
+    try {
+      operatorType.validateLeftType(basicType);
+    } catch (OperatorType.TypeValidationException e) {
+      errors.add(
+          String.format(
+              "Operator %s cannot be used with %s attribute '%s': %s",
+              operatorType, basicType, attribute.getName(), e.getMessage()));
     }
 
     return errors;
@@ -392,7 +350,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
   /** Проверка совместимости типа атрибута и типа правого операнда */
   private List<String> validateAttributeOperandCompatibility(
-      MetaAttribute attribute, PredicateNode rightOperand) {
+      MetaAttribute attribute, PredicateNode rightOperand, OperatorType operatorType) {
     List<String> errors = new ArrayList<>();
 
     if (attribute.getAttributeCategory() != AttributeCategory.BASIC) {
@@ -406,12 +364,14 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     BasicType operandType = getOperandType(rightOperand);
     if (operandType == null) return errors;
 
-    // Проверяем совместимость типов
-    if (!areTypesCompatible(attributeType, operandType)) {
+    // Проверяем совместимость типов с помощью OperatorType
+    try {
+      operatorType.validateRightType(operandType);
+    } catch (OperatorType.TypeValidationException e) {
       errors.add(
           String.format(
-              "Type mismatch: attribute '%s' has type %s but operand has type %s",
-              attribute.getName(), attributeType, operandType));
+              "Type mismatch for operator %s: attribute '%s' has type %s but operand has type %s: %s",
+              operatorType, attribute.getName(), attributeType, operandType, e.getMessage()));
     }
 
     return errors;
@@ -419,7 +379,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
   /** Проверка совместимости типа атрибута и типа значений IN */
   private List<String> validateInValuesTypeCompatibility(
-      MetaAttribute attribute, BasicType inValuesType) {
+      MetaAttribute attribute, BasicType inValuesType, OperatorType operatorType) {
     List<String> errors = new ArrayList<>();
 
     if (attribute.getAttributeCategory() != AttributeCategory.BASIC) {
@@ -429,11 +389,16 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     BasicType attributeType = attribute.getBasicType();
     if (attributeType == null) return errors;
 
-    if (!areTypesCompatible(attributeType, inValuesType)) {
-      errors.add(
-          String.format(
-              "Type mismatch: attribute '%s' has type %s but IN values have type %s",
-              attribute.getName(), attributeType, inValuesType));
+    // Для IN/NOT_IN проверяем совместимость каждого значения
+    if (operatorType == OperatorType.IN || operatorType == OperatorType.NOT_IN) {
+      try {
+        operatorType.validateRightType(inValuesType);
+      } catch (OperatorType.TypeValidationException e) {
+        errors.add(
+            String.format(
+                "Type mismatch: attribute '%s' has type %s but IN values have type %s: %s",
+                attribute.getName(), attributeType, inValuesType, e.getMessage()));
+      }
     }
 
     return errors;
@@ -447,75 +412,15 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
       case VALUE_CONSTANT:
         return operand.getValue() != null ? operand.getValue().getValueType() : null;
       case PATH_EXPRESSION:
-//        MetaAttribute targetAttr =
-//            operand.getPathExpression() != null
-//                ? operand.getPathExpression().getTargetAttribute()
-//                : null;
-//        return targetAttr != null && targetAttr.getAttributeCategory() == AttributeCategory.BASIC
-//            ? targetAttr.getBasicType()
-//            : null;
-          return null;
+        MetaAttribute targetAttr = getLastAttributeFromPath(operand.getPathExpression());
+        return targetAttr != null && targetAttr.getAttributeCategory() == AttributeCategory.BASIC
+            ? targetAttr.getBasicType()
+            : null;
       default:
         return null;
     }
   }
 
-  /** Проверяет совместимость типов для операций сравнения */
-  private boolean areTypesCompatible(BasicType attributeType, BasicType operandType) {
-    if (attributeType == operandType) return true;
-
-    // INTEGER и LONG считаются совместимыми
-    if ((attributeType == BasicType.INTEGER && operandType == BasicType.INTEGER)) {
-      return true;
-    }
-
-    // DATE и TIMESTAMP могут быть совместимы в некоторых случаях
-    if ((attributeType == BasicType.OFFSET_DATE_TIME
-        && operandType == BasicType.OFFSET_DATE_TIME)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  // Методы проверки совместимости операторов для разных типов
-
-  private boolean isBooleanCompatibleOperator(OperatorType operatorType) {
-    return switch (operatorType) {
-      case EQ, NE, IS_NULL, IS_NOT_NULL -> true;
-      default -> false;
-    };
-  }
-
-  private boolean isStringCompatibleOperator(OperatorType operatorType) {
-    return switch (operatorType) {
-      case EQ, NE, LIKE, STARTS_WITH, ENDS_WITH, CONTAINS, IN, NOT_IN, IS_NULL, IS_NOT_NULL -> true;
-      default -> false;
-    };
-  }
-
-  private boolean isNumericCompatibleOperator(OperatorType operatorType) {
-    return switch (operatorType) {
-      case EQ, NE, GT, LT, GOE, LOE, IN, NOT_IN, BETWEEN, IS_NULL, IS_NOT_NULL -> true;
-      default -> false;
-    };
-  }
-
-  private boolean isDateCompatibleOperator(OperatorType operatorType) {
-    return switch (operatorType) {
-      case EQ, NE, GT, LT, GOE, LOE, BETWEEN, IS_NULL, IS_NOT_NULL -> true;
-      default -> false;
-    };
-  }
-
-  private boolean isEnumCompatibleOperator(OperatorType operatorType) {
-    return switch (operatorType) {
-      case EQ, NE, IN, NOT_IN, IS_NULL, IS_NOT_NULL -> true;
-      default -> false;
-    };
-  }
-
-  // Остальные методы остаются без изменений
   private List<String> validateValueConstantNode(PredicateNode node) {
     List<String> errors = new ArrayList<>();
 
@@ -533,10 +438,6 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     if (node.getOperatorType() != null) {
       errors.add("VALUE_CONSTANT cannot have operatorType");
     }
-
-//    if (node.getMetaAttribute() != null) {
-//      errors.add("VALUE_CONSTANT cannot have metaAttribute");
-//    }
 
     if (node.getPathExpression() != null) {
       errors.add("VALUE_CONSTANT cannot have pathExpression");
@@ -575,10 +476,6 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
       errors.add("PATH_EXPRESSION cannot have operatorType");
     }
 
-//    if (node.getMetaAttribute() != null) {
-//      errors.add("PATH_EXPRESSION cannot have metaAttribute when pathExpression is defined");
-//    }
-
     if (node.getValue() != null) {
       errors.add("PATH_EXPRESSION cannot have value");
     }
@@ -600,11 +497,6 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
   private List<String> validateMutuallyExclusiveFields(PredicateNode node) {
     List<String> errors = new ArrayList<>();
-
-    // metaAttribute и pathExpression взаимоисключающие
-//    if (node.getMetaAttribute() != null && node.getPathExpression() != null) {
-//      errors.add("metaAttribute and pathExpression cannot both be set");
-//    }
 
     // value и inValues взаимоисключающие
     if (node.getValue() != null && !node.getInValues().isEmpty()) {
@@ -652,6 +544,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     if (value.getOffsetDateTimeValue() != null) filledFields++;
     if (value.getTimestampValue() != null) filledFields++;
     if (value.getEnumValue() != null) filledFields++;
+    if (value.getPointValue() != null) filledFields++;
 
     if (filledFields == 0) {
       errors.add("At least one value field must be filled");
@@ -675,14 +568,24 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
             errors.add("INTEGER value type must have integerValue filled");
           }
           break;
+        case DOUBLE:
+          if (value.getDoubleValue() == null) {
+            errors.add("DOUBLE value type must have doubleValue filled");
+          }
+          break;
         case OFFSET_DATE_TIME:
           if (value.getOffsetDateTimeValue() == null) {
-            errors.add("DATE value type must have dateValue filled");
+            errors.add("OFFSET_DATE_TIME value type must have offsetDateTimeValue filled");
           }
           break;
         case ENUM:
           if (value.getEnumValue() == null) {
             errors.add("ENUM value type must have enumValue filled");
+          }
+          break;
+        case POINT:
+          if (value.getPointValue() == null) {
+            errors.add("POINT value type must have pointValue filled");
           }
           break;
       }
@@ -735,25 +638,6 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
         }
       }
     }
-
-    // Валидация targetAttribute
-//    if (pathExpression.getTargetAttribute() != null) {
-//      if (pathExpression.getTargetAttribute().getAttributeCategory() != AttributeCategory.BASIC) {
-//        errors.add("Target attribute must be BASIC category");
-//      }
-//
-//      // targetAttribute должен соответствовать последнему атрибуту в цепочке
-//      if (pathExpression.getPathAttributes() != null
-//          && !pathExpression.getPathAttributes().isEmpty()) {
-//
-//        MetaAttribute lastAttribute =
-//            pathExpression.getPathAttributes().get(pathExpression.getPathAttributes().size() - 1);
-//
-//        if (!pathExpression.getTargetAttribute().getId().equals(lastAttribute.getId())) {
-//          errors.add("Target attribute must match the last attribute in path chain");
-//        }
-//      }
-//    }
 
     return errors.isEmpty() ? ValidationResult.success() : ValidationResult.error(errors);
   }
@@ -816,7 +700,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
   // Контекст для отслеживания состояния валидации (например, циклических ссылок)
   private static class ValidationContext {
-    private final Set<UUID> visitedNodes = new java.util.HashSet<>();
+    private final Set<UUID> visitedNodes = new HashSet<>();
 
     public Set<UUID> getVisitedNodes() {
       return visitedNodes;

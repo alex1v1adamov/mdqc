@@ -427,56 +427,80 @@
         </sql>
     </changeSet>
 
-    <changeSet id="populate-predicate-point" author="system">
-        <comment>Create POINT geometry predicate using DISTANCE_SPHERE operator</comment>
+    <changeSet id="populate-predicate-geometry-distance-fixed" author="system">
+        <comment>Create POINT geometry predicate using DISTANCE_SPHERE operator with new rules</comment>
         <sql>
-            -- 9. Предикат для Site geometry distance с DISTANCE_SPHERE
+            -- 9. Предикат для Site geometry distance с DISTANCE_SPHERE по новым правилам
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440009', 'SiteGeometryDistanceFilter',
+            VALUES ('990e8400-e29b-41d4-a716-446655440009', 'SiteGeometryDistanceFilterNew',
                     '550e8400-e29b-41d4-a716-446655440002');
 
-            -- Создание значений для предиката
+            -- === Создание значений для предиката ===
+
+            -- Точка для расчета расстояния
             INSERT INTO predicate.predicate_node_value (id, value_type, point_value)
-            VALUES ('bb0e8400-e29b-41d4-a716-446655440010', 'POINT',
+            VALUES ('bb0e8400-e29b-41d4-a716-446655440020', 'POINT',
                     ST_GeomFromText('POINT(37.617494 55.755826)', 4326));
 
+            -- Минимальное расстояние (100 метров)
             INSERT INTO predicate.predicate_node_value (id, value_type, double_value)
-            VALUES ('bb0e8400-e29b-41d4-a716-446655440011', 'DOUBLE', 500.0), -- минимальное расстояние
-                   ('bb0e8400-e29b-41d4-a716-446655440012', 'DOUBLE', 3000.0);
-            -- максимальное расстояние
+            VALUES ('bb0e8400-e29b-41d4-a716-446655440021', 'DOUBLE', 100.0);
 
-            -- Создание узлов-констант
+            -- Максимальное расстояние (10000 метров)
+            INSERT INTO predicate.predicate_node_value (id, value_type, double_value)
+            VALUES ('bb0e8400-e29b-41d4-a716-446655440022', 'DOUBLE', 10000.0);
+
+            -- === Создание узлов-констант для значений ===
+
+            -- Константа для точки
             INSERT INTO predicate.predicate_node (id, node_type, value_id)
-            VALUES ('cc0e8400-e29b-41d4-a716-446655440028', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440010'),
-                   ('cc0e8400-e29b-41d4-a716-446655440029', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440011'),
-                   ('cc0e8400-e29b-41d4-a716-446655440030', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440012');
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440040', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440020');
 
-            -- Создаем выражение пути для geometry
+            -- Константа для минимального расстояния
+            INSERT INTO predicate.predicate_node (id, node_type, value_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440041', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440021');
+
+            -- Константа для максимального расстояния
+            INSERT INTO predicate.predicate_node (id, node_type, value_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440042', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440022');
+
+            -- === Создание выражения пути для geometry ===
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
-            VALUES ('aa0e8400-e29b-41d4-a716-446655440011', '7ac5eb66-2582-418f-b052-e5f786d96a9a');
+            VALUES ('aa0e8400-e29b-41d4-a716-446655440020', '7ac5eb66-2582-418f-b052-e5f786d96a9a');
 
-            -- Создаем узел PATH_EXPRESSION для geometry
+            -- Узел PATH_EXPRESSION для geometry
             INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
-            VALUES ('cc0e8400-e29b-41d4-a716-446655440031', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440011');
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440043', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440020');
 
-            -- Создание специальных узлов для DISTANCE_SPHERE с использованием inValues
-            -- Узел для расстояния между 500 и 3000 метров
-            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id)
-            VALUES ('cc0e8400-e29b-41d4-a716-446655440032', 'COMPARISON_OPERATOR', 'DISTANCE_SPHERE',
-                    'cc0e8400-e29b-41d4-a716-446655440031');
+            -- === Создание DISTANCE_SPHERE узлов ===
 
-            -- Добавляем значения в inValues: [target_point, min_distance, max_distance]
-            INSERT INTO predicate.predicate_node_in_values (predicate_node_id, node_value_id, value_order)
-            VALUES ('cc0e8400-e29b-41d4-a716-446655440032', 'bb0e8400-e29b-41d4-a716-446655440010', 0), -- target point
-                   ('cc0e8400-e29b-41d4-a716-446655440032', 'bb0e8400-e29b-41d4-a716-446655440011',
-                    1),                                                                                 -- min distance (500)
-                   ('cc0e8400-e29b-41d4-a716-446655440032', 'bb0e8400-e29b-41d4-a716-446655440012', 2);
-            -- max distance (3000)
+            -- DISTANCE_SPHERE узел (возвращает расстояние как DOUBLE)
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440044', 'COMPARISON_OPERATOR', 'DISTANCE_SPHERE',
+                    'cc0e8400-e29b-41d4-a716-446655440043', 'cc0e8400-e29b-41d4-a716-446655440040');
 
-            -- Обновляем корневой узел предиката
-            UPDATE predicate.predicate_definition
-            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440032'
-            WHERE id = '990e8400-e29b-41d4-a716-446655440009';
+            -- === Создание операторов сравнения для расстояния ===
+
+            -- GT оператор: расстояние > 100
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440045', 'COMPARISON_OPERATOR', 'GT',
+                    'cc0e8400-e29b-41d4-a716-446655440044', 'cc0e8400-e29b-41d4-a716-446655440041');
+
+            -- LT оператор: расстояние lt 10000
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440046', 'COMPARISON_OPERATOR', 'LT',
+                    'cc0e8400-e29b-41d4-a716-446655440044', 'cc0e8400-e29b-41d4-a716-446655440042');
+
+            -- === Создание логического оператора AND ===
+
+            -- AND оператор: (расстояние > 100) AND (расстояние lt 10000)
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440047', 'LOGICAL_OPERATOR', 'AND',
+                    'cc0e8400-e29b-41d4-a716-446655440045', 'cc0e8400-e29b-41d4-a716-446655440046');
+
+            -- === Обновление корневого узла предиката ===
+        UPDATE predicate.predicate_definition
+        SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440047'
+        WHERE id = '990e8400-e29b-41d4-a716-446655440009';
         </sql>
-    </changeSet>
-</databaseChangeLog>
+    </changeSet></databaseChangeLog>

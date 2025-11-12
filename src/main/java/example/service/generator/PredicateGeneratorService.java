@@ -19,6 +19,8 @@ import example.models.predicate.PredicateNode;
 import example.models.predicate.PredicateNodeValue;
 import example.models.predicate.PredicatePathExpression;
 import example.service.SpatialTemplateHelper;
+import example.service.validation.PredicateValidationService;
+import example.service.validation.ValidationResult;
 import java.lang.reflect.Method;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -37,8 +39,16 @@ public class PredicateGeneratorService {
 
   private final ExpressionResolver expressionResolver;
   private final EntityClassResolver entityClassResolver;
+  private final PredicateValidationService validationService;
 
   public BooleanExpression generatePredicate(PredicateDefinition predicateDefinition) {
+    // Предварительная валидация предиката
+    ValidationResult validationResult = validationService.validate(predicateDefinition);
+    if (!validationResult.isValid()) {
+      throw new IllegalArgumentException(
+          "Predicate validation failed: " + String.join(", ", validationResult.getErrors()));
+    }
+
     Class<?> entityClass = entityClassResolver.resolve(predicateDefinition.getMetaEntity());
     PathBuilder<?> entityPath = new PathBuilder<>(entityClass, "entity");
     return expressionResolver.buildExpression(predicateDefinition.getRootNode(), entityPath);
@@ -140,8 +150,7 @@ class ComparisonOperatorHandler implements NodeHandler {
 
   @Override
   public Expression<?> handle(PredicateNode node, PathBuilder<?> entityPath) {
-    Expression<?> left = expressionBuilder.buildLeftOperand(node, entityPath);
-    return operatorProcessor.process(node.getOperatorType(), left, node);
+    return operatorProcessor.process(node.getOperatorType(), node, entityPath);
   }
 }
 
@@ -152,6 +161,7 @@ class ExpressionBuilder {
 
   private final EntityClassResolver entityClassResolver;
   private final ConstantBuilder constantBuilder;
+  private final SpatialTemplateHelper spatialTemplateHelper;
   @Lazy private final ExpressionResolver expressionResolver;
 
   public Expression<?> buildLeftOperand(PredicateNode node, PathBuilder<?> entityPath) {
@@ -171,7 +181,13 @@ class ExpressionBuilder {
     return switch (node.getNodeType()) {
       case VALUE_CONSTANT -> constantBuilder.buildConstant(node.getValue());
       case PATH_EXPRESSION -> buildPathExpression(node.getPathExpression(), entityPath);
-      case COMPARISON_OPERATOR -> buildLeftOperand(node, entityPath);
+      case COMPARISON_OPERATOR -> {
+        if (node.getOperatorType() == OperatorType.DISTANCE_SPHERE) {
+          yield buildDistanceSphereExpression(node, entityPath);
+        } else {
+          yield buildLeftOperand(node, entityPath);
+        }
+      }
       case LOGICAL_OPERATOR -> expressionResolver.buildExpression(node, entityPath);
       default ->
           throw new IllegalArgumentException(
@@ -229,78 +245,26 @@ class ExpressionBuilder {
     };
   }
 
-  // Убрана старая реализация createTypedExpression, т.к. теперь всегда используем pathExpression
-}
+  NumberTemplate<Double> buildDistanceSphereExpression(
+      PredicateNode node, PathBuilder<?> entityPath) {
+    // DISTANCE_SPHERE - бинарный оператор с двумя POINT операндами
+    Expression<?> leftGeometry = buildLeftOperand(node, entityPath);
+    Expression<?> rightPoint = buildOperandExpression(node.getRightOperand(), entityPath);
 
-// OperatorProcessor.java
-@Component
-@RequiredArgsConstructor
-class OperatorProcessor {
-
-  private final ExpressionBuilder expressionBuilder;
-  private final ConstantBuilder constantBuilder;
-  private final SpatialTemplateHelper spatialTemplateHelper;
-
-  public BooleanExpression process(
-      OperatorType operatorType, Expression<?> left, PredicateNode node) {
-
-    // Обработка DISTANCE_SPHERE оператора
-    if (operatorType == OperatorType.DISTANCE_SPHERE) {
-      return buildDistanceSphereExpression(left, node);
-    }
-
-    return switch (operatorType) {
-      case IS_NULL -> Expressions.predicate(Ops.IS_NULL, left);
-      case IS_NOT_NULL -> Expressions.predicate(Ops.IS_NOT_NULL, left);
-      case IN, NOT_IN ->
-          buildInExpression(left, node.getInValues(), operatorType == OperatorType.NOT_IN);
-      case BETWEEN -> buildBetweenExpression(left, node);
-      default -> buildBinaryExpression(operatorType, left, node);
-    };
-  }
-
-  private MetaAttribute getTargetAttribute(PredicatePathExpression pathExpression) {
-    if (pathExpression.getPathAttributes().isEmpty()) {
-      return pathExpression.getRootAttribute();
-    } else {
-      return pathExpression.getPathAttributes().get(pathExpression.getPathAttributes().size() - 1);
-    }
-  }
-
-  private BooleanExpression buildDistanceSphereExpression(Expression<?> left, PredicateNode node) {
-    if (!(left instanceof ComparablePath)) {
-      throw new IllegalArgumentException("DISTANCE_SPHERE operation requires geometry attribute");
-    }
-
-    ComparablePath<Point> geometryPath = (ComparablePath<Point>) left;
-
-    // Для DISTANCE_SPHERE используем inValues: [target_point, min_distance, max_distance]
-    if (node.getInValues() == null || node.getInValues().size() < 3) {
+    if (!(leftGeometry instanceof ComparablePath)) {
       throw new IllegalArgumentException(
-          "DISTANCE_SPHERE operation requires exactly three values in inValues: [target_point, min_distance, max_distance]");
+          "DISTANCE_SPHERE requires geometry attribute as left operand");
     }
 
-    // Получаем значения из inValues
-    Point targetPoint = extractPointValue(constantBuilder.buildConstant(node.getInValues().get(0)));
-    Double minDistance =
-        extractDoubleValue(constantBuilder.buildConstant(node.getInValues().get(1)));
-    Double maxDistance =
-        extractDoubleValue(constantBuilder.buildConstant(node.getInValues().get(2)));
-
-    if (targetPoint == null || minDistance == null || maxDistance == null) {
-      throw new IllegalArgumentException(
-          "DISTANCE_SPHERE operation requires valid point and distance values");
+    Point targetPoint = extractPointValue(rightPoint);
+    if (targetPoint == null) {
+      throw new IllegalArgumentException("DISTANCE_SPHERE requires POINT as right operand");
     }
 
-    // Создаем выражение расстояния
-    NumberTemplate<Double> distanceExpr =
-        spatialTemplateHelper.distanceSphere(geometryPath, targetPoint);
+    ComparablePath<Point> geometryPath = (ComparablePath<Point>) leftGeometry;
 
-    // Строим предикат: minDistance <= distance <= maxDistance
-    BooleanExpression minCondition = distanceExpr.goe(minDistance);
-    BooleanExpression maxCondition = distanceExpr.loe(maxDistance);
-
-    return minCondition.and(maxCondition);
+    // Создаем выражение расстояния (возвращает NumberTemplate<Double>)
+    return spatialTemplateHelper.distanceSphere(geometryPath, targetPoint);
   }
 
   private Point extractPointValue(Expression<?> pointExpression) {
@@ -312,39 +276,54 @@ class OperatorProcessor {
     }
     return null;
   }
+}
 
-  private Double extractDoubleValue(Expression<?> doubleExpression) {
-    if (doubleExpression instanceof ConstantImpl) {
-      Object value = ((ConstantImpl) doubleExpression).getConstant();
-      if (value instanceof Double) {
-        return (Double) value;
-      } else if (value instanceof Number) {
-        return ((Number) value).doubleValue();
-      }
+// OperatorProcessor.java
+@Component
+@RequiredArgsConstructor
+class OperatorProcessor {
+
+  private final ExpressionBuilder expressionBuilder;
+  private final ConstantBuilder constantBuilder;
+
+  public BooleanExpression process(
+      OperatorType operatorType, PredicateNode node, PathBuilder<?> entityPath) {
+    // Специальная обработка DISTANCE_SPHERE - он возвращает числовое выражение
+    if (operatorType == OperatorType.DISTANCE_SPHERE) {
+      NumberTemplate<Double> distanceExpr =
+          expressionBuilder.buildDistanceSphereExpression(node, entityPath);
+      // DISTANCE_SPHERE сам по себе не создает BooleanExpression, возвращаем базовую проверку
+      return distanceExpr.gt(0.0);
     }
-    return null;
-  }
 
-  private BooleanExpression buildComparisonExpression(
-      NumberTemplate<Double> distanceExpr, Double distanceValue, OperatorType operatorType) {
+    // Для остальных операторов строим левый операнд
+    Expression<?> left = expressionBuilder.buildLeftOperand(node, entityPath);
+
     return switch (operatorType) {
-      case EQ -> distanceExpr.eq(distanceValue);
-      case NE -> distanceExpr.ne(distanceValue);
-      case GT -> distanceExpr.gt(distanceValue);
-      case LT -> distanceExpr.lt(distanceValue);
-      case GOE -> distanceExpr.goe(distanceValue);
-      case LOE -> distanceExpr.loe(distanceValue);
-      default ->
-          throw new IllegalArgumentException(
-              "Unsupported operator for DISTANCE_SPHERE: " + operatorType);
+      case IS_NULL -> Expressions.predicate(Ops.IS_NULL, left);
+      case IS_NOT_NULL -> Expressions.predicate(Ops.IS_NOT_NULL, left);
+      case IN, NOT_IN ->
+          buildInExpression(left, node.getInValues(), operatorType == OperatorType.NOT_IN);
+      case BETWEEN -> buildBetweenExpression(left, node);
+      default -> buildBinaryExpression(operatorType, left, node, entityPath);
     };
   }
 
   private BooleanExpression buildBinaryExpression(
-      OperatorType operatorType, Expression<?> left, PredicateNode node) {
-    Expression<?> right = expressionBuilder.buildOperandExpression(node.getRightOperand(), null);
+      OperatorType operatorType,
+      Expression<?> left,
+      PredicateNode node,
+      PathBuilder<?> entityPath) {
+    Expression<?> right =
+        expressionBuilder.buildOperandExpression(node.getRightOperand(), entityPath);
     if (right == null) {
       throw new IllegalArgumentException("Right operand required for operator: " + operatorType);
+    }
+
+    // Если левый операнд - результат DISTANCE_SPHERE (NumberTemplate), обрабатываем как числовое
+    // сравнение
+    if (left instanceof NumberTemplate) {
+      return buildNumericComparison(operatorType, (NumberTemplate<Double>) left, right);
     }
 
     return switch (operatorType) {
@@ -362,9 +341,39 @@ class OperatorProcessor {
     };
   }
 
+  private BooleanExpression buildNumericComparison(
+      OperatorType operatorType, NumberTemplate<Double> left, Expression<?> right) {
+    Double rightValue = extractDoubleValue(right);
+    if (rightValue == null) {
+      throw new IllegalArgumentException("Numeric operator requires numeric right operand");
+    }
+
+    return switch (operatorType) {
+      case EQ -> left.eq(rightValue);
+      case NE -> left.ne(rightValue);
+      case GT -> left.gt(rightValue);
+      case LT -> left.lt(rightValue);
+      case GOE -> left.goe(rightValue);
+      case LOE -> left.loe(rightValue);
+      default ->
+          throw new IllegalArgumentException("Unsupported numeric operator: " + operatorType);
+    };
+  }
+
+  private Double extractDoubleValue(Expression<?> doubleExpression) {
+    if (doubleExpression instanceof ConstantImpl) {
+      Object value = ((ConstantImpl) doubleExpression).getConstant();
+      if (value instanceof Double) {
+        return (Double) value;
+      } else if (value instanceof Number) {
+        return ((Number) value).doubleValue();
+      }
+    }
+    return null;
+  }
+
   private BooleanExpression buildInExpression(
       Expression<?> left, List<PredicateNodeValue> inValues, boolean negate) {
-    // Для IN/NOT_IN должно быть минимум одно значение
     if (inValues == null || inValues.isEmpty()) {
       throw new IllegalArgumentException("IN operator requires at least one value");
     }
@@ -379,13 +388,11 @@ class OperatorProcessor {
   }
 
   private BooleanExpression buildBetweenExpression(Expression<?> left, PredicateNode node) {
-    // Используем inValues для BETWEEN - должно быть ровно 2 значения
     if (node.getInValues() == null || node.getInValues().size() != 2) {
       throw new IllegalArgumentException(
           "BETWEEN operator requires exactly two values in inValues list");
     }
 
-    // Первое значение - нижняя граница, второе - верхняя
     Expression<?> fromValue = constantBuilder.buildConstant(node.getInValues().get(0));
     Expression<?> toValue = constantBuilder.buildConstant(node.getInValues().get(1));
 
@@ -462,6 +469,68 @@ class ValueConstantHandler implements NodeHandler {
   }
 }
 
+// DistanceSphereExpressionHandler.java
+@Component
+@RequiredArgsConstructor
+class DistanceSphereExpressionHandler implements NodeHandler {
+
+  private final ExpressionBuilder expressionBuilder;
+
+  @Override
+  public boolean supports(PredicateNode node) {
+    // Обрабатываем COMPARISON_OPERATOR, где левый операнд - DISTANCE_SPHERE
+    return node.getNodeType() == NodeType.COMPARISON_OPERATOR
+        && node.getLeftOperand() != null
+        && node.getLeftOperand().getNodeType() == NodeType.COMPARISON_OPERATOR
+        && node.getLeftOperand().getOperatorType() == OperatorType.DISTANCE_SPHERE;
+  }
+
+  @Override
+  public BooleanExpression handle(PredicateNode node, PathBuilder<?> entityPath) {
+    // Строим выражение DISTANCE_SPHERE
+    NumberTemplate<Double> distanceExpr =
+        expressionBuilder.buildDistanceSphereExpression(node.getLeftOperand(), entityPath);
+
+    // Получаем правый операнд для сравнения
+    Expression<?> right =
+        expressionBuilder.buildOperandExpression(node.getRightOperand(), entityPath);
+    if (right == null) {
+      throw new IllegalArgumentException("Right operand required for distance comparison");
+    }
+
+    // Извлекаем числовое значение
+    Double rightValue = extractDoubleValue(right);
+    if (rightValue == null) {
+      throw new IllegalArgumentException("Distance comparison requires numeric right operand");
+    }
+
+    // Строим сравнение расстояния
+    return switch (node.getOperatorType()) {
+      case GT -> distanceExpr.gt(rightValue);
+      case LT -> distanceExpr.lt(rightValue);
+      case GOE -> distanceExpr.goe(rightValue);
+      case LOE -> distanceExpr.loe(rightValue);
+      case EQ -> distanceExpr.eq(rightValue);
+      case NE -> distanceExpr.ne(rightValue);
+      default ->
+          throw new IllegalArgumentException(
+              "Unsupported operator for distance comparison: " + node.getOperatorType());
+    };
+  }
+
+  private Double extractDoubleValue(Expression<?> doubleExpression) {
+    if (doubleExpression instanceof ConstantImpl) {
+      Object value = ((ConstantImpl) doubleExpression).getConstant();
+      if (value instanceof Double) {
+        return (Double) value;
+      } else if (value instanceof Number) {
+        return ((Number) value).doubleValue();
+      }
+    }
+    return null;
+  }
+}
+
 // HandlerConfiguration.java
 @Component
 @RequiredArgsConstructor
@@ -471,10 +540,12 @@ class HandlerConfiguration {
   private final ComparisonOperatorHandler comparisonOperatorHandler;
   private final PathExpressionHandler pathExpressionHandler;
   private final ValueConstantHandler valueConstantHandler;
+  private final DistanceSphereExpressionHandler distanceSphereExpressionHandler;
 
   @Bean
   public List<NodeHandler> nodeHandlers() {
     return List.of(
+        distanceSphereExpressionHandler, // Должен быть первым для приоритетной обработки
         logicalOperatorHandler,
         comparisonOperatorHandler,
         pathExpressionHandler,
