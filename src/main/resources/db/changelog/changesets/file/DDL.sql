@@ -6,7 +6,7 @@ create type meta.attribute_category as enum ('BASIC', 'ENTITY');
 
 alter type meta.attribute_category owner to postgres;
 
-create type meta.basic_type as enum ('STRING', 'BOOLEAN', 'INTEGER', 'LONG', 'OFFSET_DATE_TIME', 'TIMESTAMP', 'ENUM', 'DOUBLE', 'POINT', 'DISTANCE_SPHERE');
+create type meta.basic_type as enum ('STRING', 'BOOLEAN', 'INTEGER', 'LONG', 'OFFSET_DATE_TIME', 'TIMESTAMP', 'ENUM', 'DOUBLE', 'POINT');
 
 alter type meta.basic_type owner to postgres;
 
@@ -14,7 +14,7 @@ create type predicate.node_type as enum ('LOGICAL_OPERATOR', 'COMPARISON_OPERATO
 
 alter type predicate.node_type owner to postgres;
 
-create type predicate.operator_type as enum ('AND', 'OR', 'NOT', 'EQ', 'NE', 'GT', 'LT', 'GOE', 'LOE', 'LIKE', 'STARTS_WITH', 'ENDS_WITH', 'CONTAINS', 'IN', 'NOT_IN', 'BETWEEN', 'IS_NULL', 'IS_NOT_NULL');
+create type predicate.operator_type as enum ('AND', 'OR', 'NOT', 'EQ', 'NE', 'GT', 'LT', 'GOE', 'LOE', 'LIKE', 'STARTS_WITH', 'ENDS_WITH', 'CONTAINS', 'IN', 'NOT_IN', 'BETWEEN', 'IS_NULL', 'IS_NOT_NULL', 'DISTANCE_SPHERE');
 
 alter type predicate.operator_type owner to postgres;
 

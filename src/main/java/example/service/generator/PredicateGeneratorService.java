@@ -9,7 +9,6 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberTemplate;
 import com.querydsl.core.types.dsl.PathBuilder;
 import example.models.meta.AttributeCategory;
-import example.models.meta.BasicType;
 import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEntity;
 import example.models.meta.MetaEnumValue;
@@ -244,8 +243,9 @@ class OperatorProcessor {
 
   public BooleanExpression process(
       OperatorType operatorType, Expression<?> left, PredicateNode node) {
-    // Проверяем, является ли это DISTANCE_SPHERE операцией
-    if (isDistanceSphereOperation(node, left)) {
+
+    // Обработка DISTANCE_SPHERE оператора
+    if (operatorType == OperatorType.DISTANCE_SPHERE) {
       return buildDistanceSphereExpression(left, node);
     }
 
@@ -257,29 +257,6 @@ class OperatorProcessor {
       case BETWEEN -> buildBetweenExpression(left, node);
       default -> buildBinaryExpression(operatorType, left, node);
     };
-  }
-
-  private boolean isDistanceSphereOperation(PredicateNode node, Expression<?> left) {
-    // Теперь проверяем через pathExpression
-    if (node.getPathExpression() == null) return false;
-
-    // Получаем конечный атрибут пути
-    MetaAttribute targetAttribute = getTargetAttribute(node.getPathExpression());
-    if (targetAttribute == null) return false;
-
-    boolean isPointAttribute = targetAttribute.getBasicType() == BasicType.POINT;
-    boolean isDistanceOperator =
-        node.getOperatorType() == OperatorType.LT
-            || node.getOperatorType() == OperatorType.GT
-            || node.getOperatorType() == OperatorType.LOE
-            || node.getOperatorType() == OperatorType.GOE
-            || node.getOperatorType() == OperatorType.EQ
-            || node.getOperatorType() == OperatorType.NE;
-    boolean hasValidOperands = node.getLeftOperand() != null && node.getRightOperand() != null;
-    boolean isPointExpression =
-        left instanceof ComparablePath && Point.class.isAssignableFrom(left.getType());
-
-    return isPointAttribute && isDistanceOperator && hasValidOperands && isPointExpression;
   }
 
   private MetaAttribute getTargetAttribute(PredicatePathExpression pathExpression) {
@@ -297,35 +274,33 @@ class OperatorProcessor {
 
     ComparablePath<Point> geometryPath = (ComparablePath<Point>) left;
 
-    Expression<?> targetPointExpr =
-        expressionBuilder.buildOperandExpression(node.getLeftOperand(), null);
-    if (targetPointExpr == null) {
+    // Для DISTANCE_SPHERE используем inValues: [target_point, min_distance, max_distance]
+    if (node.getInValues() == null || node.getInValues().size() < 3) {
       throw new IllegalArgumentException(
-          "DISTANCE_SPHERE operation requires target point in leftOperand");
+          "DISTANCE_SPHERE operation requires exactly three values in inValues: [target_point, min_distance, max_distance]");
     }
 
-    Point targetPoint = extractPointValue(targetPointExpr);
-    if (targetPoint == null) {
+    // Получаем значения из inValues
+    Point targetPoint = extractPointValue(constantBuilder.buildConstant(node.getInValues().get(0)));
+    Double minDistance =
+        extractDoubleValue(constantBuilder.buildConstant(node.getInValues().get(1)));
+    Double maxDistance =
+        extractDoubleValue(constantBuilder.buildConstant(node.getInValues().get(2)));
+
+    if (targetPoint == null || minDistance == null || maxDistance == null) {
       throw new IllegalArgumentException(
-          "DISTANCE_SPHERE operation requires valid Point geometry in leftOperand");
+          "DISTANCE_SPHERE operation requires valid point and distance values");
     }
 
-    Expression<?> distanceValueExpr =
-        expressionBuilder.buildOperandExpression(node.getRightOperand(), null);
-    if (distanceValueExpr == null) {
-      throw new IllegalArgumentException(
-          "DISTANCE_SPHERE operation requires distance value in rightOperand");
-    }
-
-    Double distanceValue = extractDoubleValue(distanceValueExpr);
-    if (distanceValue == null) {
-      throw new IllegalArgumentException("DISTANCE_SPHERE operation requires valid distance value");
-    }
-
+    // Создаем выражение расстояния
     NumberTemplate<Double> distanceExpr =
         spatialTemplateHelper.distanceSphere(geometryPath, targetPoint);
 
-    return buildComparisonExpression(distanceExpr, distanceValue, node.getOperatorType());
+    // Строим предикат: minDistance <= distance <= maxDistance
+    BooleanExpression minCondition = distanceExpr.goe(minDistance);
+    BooleanExpression maxCondition = distanceExpr.loe(maxDistance);
+
+    return minCondition.and(maxCondition);
   }
 
   private Point extractPointValue(Expression<?> pointExpression) {
