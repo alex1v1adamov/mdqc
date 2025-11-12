@@ -10,7 +10,7 @@
                  stripComments="false"/>
     </changeSet>
     <changeSet id="2" author="your-name">
-        <sqlFile path="file/base_station.sql" relativeToChangelogFile="true" splitStatements="false"
+        <sqlFile path="file/pet.sql" relativeToChangelogFile="true" splitStatements="false"
                  stripComments="false"/>
     </changeSet>
 

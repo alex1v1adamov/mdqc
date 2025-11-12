@@ -1,6 +1,6 @@
 package example.models;
 
-public enum BsStatus {
+public enum PetStatus {
   CREATED,
   ACTIVE,
   CANCELLED,

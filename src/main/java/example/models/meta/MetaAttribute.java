@@ -37,7 +37,7 @@ public class MetaAttribute {
   @Column(name = "id", updatable = false, nullable = false)
   private UUID id;
 
-  /** Имя атрибута в метамодели (например, "baseStations" для коллекции) */
+  /** Имя атрибута в метамодели (например, "pets" для коллекции) */
   @Column(nullable = false)
   private String name;
 

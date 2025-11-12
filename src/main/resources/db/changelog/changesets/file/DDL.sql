@@ -30,7 +30,7 @@ create table vet.clinic
 alter table vet.clinic
     owner to postgres;
 
-create table vet.base_station
+create table vet.pet
 (
     id              varchar(255) not null
         primary key,
@@ -39,7 +39,7 @@ create table vet.base_station
         constraint fklqswy7od0wada8ep1ra6jqt20
             references vet.clinic,
     status          varchar(255)
-        constraint base_station_status_check
+        constraint pet_status_check
             check ((status)::text = ANY
         ((ARRAY ['CREATED'::character varying, 'ACTIVE'::character varying, 'CANCELLED'::character varying])::text[])),
     bs_date_time    timestamp with time zone,
@@ -47,13 +47,13 @@ create table vet.base_station
     coverage_radius double precision
 );
 
-comment on column vet.base_station.rating is 'Рейтинг базовой станции (целое число)';
+comment on column vet.pet.rating is 'Рейтинг базовой станции (целое число)';
 
-alter table vet.base_station
+alter table vet.pet
     owner to postgres;
 
-create index idx_base_station_rating
-    on vet.base_station (rating);
+create index idx_pet_rating
+    on vet.pet (rating);
 
 create table meta.meta_entity
 (

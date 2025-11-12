@@ -11,15 +11,15 @@
         <sql>
             -- Заполнение мета-сущностей (только классы, не enum)
             INSERT INTO meta.meta_entity (id, name)
-            VALUES ('550e8400-e29b-41d4-a716-446655440001', 'example.models.BaseStation'),
+            VALUES ('550e8400-e29b-41d4-a716-446655440001', 'example.models.Pet'),
                    ('550e8400-e29b-41d4-a716-446655440002', 'example.models.Clinic');
 
-            -- Заполнение мета-перечисления BsStatus
+            -- Заполнение мета-перечисления PetStatus
             INSERT INTO meta.meta_enum (id, name, description, class_name)
-            VALUES ('660e8400-e29b-41d4-a716-446655440001', 'BsStatus', 'Статус базовой станции',
-                    'example.models.BsStatus');
+            VALUES ('660e8400-e29b-41d4-a716-446655440001', 'PetStatus', 'Статус базовой станции',
+                    'example.models.PetStatus');
 
-            -- Заполнение значений перечисления BsStatus
+            -- Заполнение значений перечисления PetStatus
             INSERT INTO meta.meta_enum_value (id, name, storage_value, description, order_index, meta_enum_id)
             VALUES ('770e8400-e29b-41d4-a716-446655440001', 'CREATED', 'CREATED', 'Создан', 0,
                     '660e8400-e29b-41d4-a716-446655440001'),
@@ -31,9 +31,9 @@
     </changeSet>
 
     <changeSet id="populate-meta-2" author="system">
-        <comment>Populate meta attributes for BaseStation and Clinic</comment>
+        <comment>Populate meta attributes for Pet and Clinic</comment>
         <sql>
-            -- Заполнение мета-атрибутов для BaseStation
+            -- Заполнение мета-атрибутов для Pet
             INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type,
                                              attribute_entity_type_id,
                                              is_bidirectional, meta_enum_id)
@@ -53,8 +53,8 @@
                  'ENTITY', NULL,
                  '550e8400-e29b-41d4-a716-446655440002', false, NULL),
 
-                -- bsStatus - enum поле
-                ('880e8400-e29b-41d4-a716-446655440004', 'bsStatus', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR',
+                -- petStatus - enum поле
+                ('880e8400-e29b-41d4-a716-446655440004', 'petStatus', '550e8400-e29b-41d4-a716-446655440001', 'SINGULAR',
                  'BASIC',
                  'ENUM', NULL, false, '660e8400-e29b-41d4-a716-446655440001');
 
@@ -78,12 +78,12 @@
                  'SINGULAR', 'BASIC',
                  'BOOLEAN', NULL, false, NULL),
 
-                -- baseStations - коллекция BaseStation (OneToMany)
-                ('880e8400-e29b-41d4-a716-446655440014', 'baseStations', '550e8400-e29b-41d4-a716-446655440002',
+                -- pets - коллекция Pet (OneToMany)
+                ('880e8400-e29b-41d4-a716-446655440014', 'pets', '550e8400-e29b-41d4-a716-446655440002',
                  'PLURAL', 'ENTITY',
                  NULL, '550e8400-e29b-41d4-a716-446655440001', true, '880e8400-e29b-41d4-a716-446655440003');
 
-            -- Обновляем обратную ссылку для bidirectional связи baseStations- clinic
+            -- Обновляем обратную ссылку для bidirectional связи pets- clinic
             UPDATE meta.meta_attribute
             SET related_attribute_id = '880e8400-e29b-41d4-a716-446655440014',
                 is_bidirectional     = true
@@ -94,7 +94,7 @@
     <changeSet id="populate-meta-3" author="system">
         <comment>Add additional meta attributes</comment>
         <sql>
-            -- Добавляем мета-атрибут для bsDateTime в BaseStation
+            -- Добавляем мета-атрибут для bsDateTime в Pet
             INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type,
                                              attribute_entity_type_id,
                                              is_bidirectional, meta_enum_id)
@@ -102,13 +102,13 @@
                     'SINGULAR',
                     'BASIC', 'OFFSET_DATE_TIME', NULL, false, NULL);
 
-            -- Добавляем мета-атрибут rating в BaseStation
+            -- Добавляем мета-атрибут rating в Pet
             INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type,
                                              attribute_entity_type_id, is_bidirectional, meta_enum_id)
             VALUES ('880e8400-e29b-41d4-a716-446655440016', 'rating', '550e8400-e29b-41d4-a716-446655440001',
                     'SINGULAR', 'BASIC', 'INTEGER', NULL, false, NULL);
 
-            -- Добавляем мета-атрибут coverageRadius в BaseStation
+            -- Добавляем мета-атрибут coverageRadius в Pet
             INSERT INTO meta.meta_attribute (id, name, entity_id, type, attribute_category, basic_type,
                                              attribute_entity_type_id, is_bidirectional, meta_enum_id)
             VALUES ('880e8400-e29b-41d4-a716-446655440018', 'coverageRadius', '550e8400-e29b-41d4-a716-446655440001',
@@ -135,9 +135,9 @@
     <changeSet id="populate-predicate-1" author="system">
         <comment>Create basic predicates using PATH_EXPRESSION only</comment>
         <sql>
-            -- 1. Предикат: BaseStation с isResearch = true через навигацию clinic.isResearch
+            -- 1. Предикат: Pet с isResearch = true через навигацию clinic.isResearch
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440001', 'ResearchBaseStations',
+            VALUES ('990e8400-e29b-41d4-a716-446655440001', 'ResearchPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
             -- Создаем выражение пути: clinic.isResearch
@@ -175,12 +175,12 @@
     <changeSet id="populate-predicate-2" author="system">
         <comment>Create status-based predicates using PATH_EXPRESSION</comment>
         <sql>
-            -- 2. Предикат: BaseStation с определенным статусом (ACTIVE) - простой атрибут через PATH_EXPRESSION
+            -- 2. Предикат: Pet с определенным статусом (ACTIVE) - простой атрибут через PATH_EXPRESSION
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440002', 'ActiveBaseStations',
+            VALUES ('990e8400-e29b-41d4-a716-446655440002', 'ActivePets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
-            -- Создаем выражение пути для простого атрибута bsStatus (пустой path_attributes)
+            -- Создаем выражение пути для простого атрибута petStatus (пустой path_attributes)
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440003', '880e8400-e29b-41d4-a716-446655440004');
 
@@ -192,11 +192,11 @@
             INSERT INTO predicate.predicate_node (id, node_type, value_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440004', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440002');
 
-            -- Создаем узел PATH_EXPRESSION для bsStatus
+            -- Создаем узел PATH_EXPRESSION для petStatus
             INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440005', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440003');
 
-            -- Создаем узел COMPARISON_OPERATOR для сравнения bsStatus = ACTIVE
+            -- Создаем узел COMPARISON_OPERATOR для сравнения petStatus = ACTIVE
             INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440006', 'COMPARISON_OPERATOR', 'EQ',
                     'cc0e8400-e29b-41d4-a716-446655440005', 'cc0e8400-e29b-41d4-a716-446655440004');
@@ -206,9 +206,9 @@
             SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440006'
             WHERE id = '990e8400-e29b-41d4-a716-446655440002';
 
-            -- 3. Сложный предикат: BaseStation с isResearch = true И статусом ACTIVE
+            -- 3. Сложный предикат: Pet с isResearch = true И статусом ACTIVE
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440003', 'ActiveResearchBaseStations',
+            VALUES ('990e8400-e29b-41d4-a716-446655440003', 'ActiveResearchPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
             -- Создаем узел LOGICAL_OPERATOR для AND
@@ -227,9 +227,9 @@
     <changeSet id="populate-predicate-datetime" author="system">
         <comment>Create datetime-based predicate using PATH_EXPRESSION</comment>
         <sql>
-            -- 4. Предикат: BaseStation с bsDateTime после определенной даты
+            -- 4. Предикат: Pet с bsDateTime после определенной даты
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440004', 'RecentBaseStations',
+            VALUES ('990e8400-e29b-41d4-a716-446655440004', 'RecentPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
             -- Создаем выражение пути для bsDateTime
@@ -263,9 +263,9 @@
     <changeSet id="populate-predicate-integer" author="system">
         <comment>Create integer-based predicate using PATH_EXPRESSION</comment>
         <sql>
-            -- 5. Предикат: BaseStation с rating между 2 и 4
+            -- 5. Предикат: Pet с rating между 2 и 4
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440005', 'MediumRatedBaseStations',
+            VALUES ('990e8400-e29b-41d4-a716-446655440005', 'MediumRatedPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
 -- Создаем выражение пути для rating
@@ -303,7 +303,7 @@
         <sql>
             -- 6. Предикат с DOUBLE типом
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440006', 'WideCoverageBaseStations',
+            VALUES ('990e8400-e29b-41d4-a716-446655440006', 'WideCoveragePets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
             -- Создаем выражение пути для coverageRadius
@@ -393,16 +393,16 @@
     <changeSet id="populate-predicate-in" author="system">
         <comment>Create IN predicate using PATH_EXPRESSION</comment>
         <sql>
-            -- 8. Предикат для BaseStation с bsStatus IN ('ACTIVE', 'CREATED')
+            -- 8. Предикат для Pet с petStatus IN ('ACTIVE', 'CREATED')
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
-            VALUES ('990e8400-e29b-41d4-a716-446655440008', 'ActiveOrCreatedBaseStations',
+            VALUES ('990e8400-e29b-41d4-a716-446655440008', 'ActiveOrCreatedPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
-            -- Создаем выражение пути для bsStatus
+            -- Создаем выражение пути для petStatus
             INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440010', '880e8400-e29b-41d4-a716-446655440004');
 
-            -- Создаем узел PATH_EXPRESSION для bsStatus
+            -- Создаем узел PATH_EXPRESSION для petStatus
             INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440026', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440010');
 

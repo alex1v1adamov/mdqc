@@ -50,7 +50,7 @@ public class Clinic {
   @SubscriptionField
   @OneToMany(mappedBy = "clinic")
   @JsonIgnore
-  private List<BaseStation> baseStations = new ArrayList<>();
+  private List<Pet> pets = new ArrayList<>();
 
   //        @JPQLFilterFragment(
   //                operator = Operator.NOTEMPTY ,  // Repurpose this operator

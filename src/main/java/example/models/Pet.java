@@ -19,12 +19,12 @@ import lombok.Getter;
 import lombok.Setter;
 
 @UpdatePermission(expression = "RSMD")
-@Include(name = "baseStation")
-@Table(schema = "vet", name = "base_station")
+@Include(name = "pet")
+@Table(schema = "vet", name = "pet")
 @Entity
 @Getter
 @Setter
-public class BaseStation {
+public class Pet {
   @Id private String id = "";
 
   @Column(name = "name_in_nms")
@@ -32,7 +32,7 @@ public class BaseStation {
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status")
-  BsStatus bsStatus;
+  PetStatus petStatus;
 
   @Column(name = "bs_date_time")
   OffsetDateTime bsDateTime;
