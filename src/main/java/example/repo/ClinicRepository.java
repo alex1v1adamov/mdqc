@@ -1,6 +1,6 @@
 package example.repo;
 
-import example.models.Clinic;
+import example.models.vet.Clinic;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;

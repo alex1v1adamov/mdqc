@@ -1,8 +1,8 @@
 package example.controllers;
 
 import com.querydsl.jpa.impl.JPAQuery;
-import example.models.QClinic;
-import example.models.Clinic;
+import example.models.vet.QClinic;
+import example.models.vet.Clinic;
 import example.repo.ClinicRepository;
 import example.service.SpatialTemplateHelper;
 import jakarta.persistence.EntityManager;

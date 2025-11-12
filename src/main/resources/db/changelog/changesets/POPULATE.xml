@@ -11,13 +11,13 @@
         <sql>
             -- Заполнение мета-сущностей (только классы, не enum)
             INSERT INTO meta.meta_entity (id, name)
-            VALUES ('550e8400-e29b-41d4-a716-446655440001', 'example.models.Pet'),
-                   ('550e8400-e29b-41d4-a716-446655440002', 'example.models.Clinic');
+            VALUES ('550e8400-e29b-41d4-a716-446655440001', 'example.models.vet.Pet'),
+                   ('550e8400-e29b-41d4-a716-446655440002', 'example.models.vet.Clinic');
 
             -- Заполнение мета-перечисления PetType
             INSERT INTO meta.meta_enum (id, name, description, class_name)
             VALUES ('660e8400-e29b-41d4-a716-446655440001', 'PetType', 'питомца',
-                    'example.models.PetType');
+                    'example.models.vet.PetType');
 
             -- Заполнение значений перечисления PetType
             INSERT INTO meta.meta_enum_value (id, name, storage_value, description, order_index, meta_enum_id)
