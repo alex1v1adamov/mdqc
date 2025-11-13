@@ -31,7 +31,7 @@ public class ConsolePredicateVisualizer {
 
 
         StringBuilder sb = new StringBuilder();
-        sb.append("PredicateDefinition: ").append(predicateDefinition.getName()).append("\n");
+        sb.append("PredicateDefinition: ").append(predicateDefinition.getName()).append(". ID: ").append(predicateDefinition.getId()).append("\n");
         sb.append("Target Entity: ").append(predicateDefinition.getMetaEntity().getName()).append("\n\n");
 
         if (predicateDefinition.getRootNode() != null) {

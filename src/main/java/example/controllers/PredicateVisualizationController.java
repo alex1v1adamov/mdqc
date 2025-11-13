@@ -28,22 +28,6 @@ public class PredicateVisualizationController {
         return visualizer.visualize(id);
     }
 
-    @ShellMethod(key = "show-predicate-by-id", value = "Show predicate structure diagram by ID")
-    public String showPredicateById(@ShellOption String predicateId) {
-        try {
-            UUID id = UUID.fromString(predicateId);
-            Optional<PredicateDefinition> predicateOpt = predicateDefinitionRepository.findById(id);
-            
-            if (predicateOpt.isEmpty()) {
-                return "Predicate not found with ID: " + predicateId;
-            }
-            
-            return visualizer.visualize(id);
-        } catch (IllegalArgumentException e) {
-            return "Invalid UUID format: " + predicateId;
-        }
-    }
-
     @ShellMethod(key = "list-predicates", value = "List all available predicates")
     public String listPredicates() {
         List<PredicateDefinition> predicates = predicateDefinitionRepository.findAll();
