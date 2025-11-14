@@ -10,7 +10,7 @@ create type meta.basic_type as enum ('STRING', 'BOOLEAN', 'INTEGER', 'LONG', 'OF
 
 alter type meta.basic_type owner to postgres;
 
-create type predicate.node_type as enum ('LOGICAL_OPERATOR', 'COMPARISON_OPERATOR', 'VALUE_CONSTANT', 'PATH_EXPRESSION');
+create type predicate.node_type as enum ('EVALUATION_OPERATION', 'VALUE_CONSTANT', 'PATH_EXPRESSION');
 
 alter type predicate.node_type owner to postgres;
 
@@ -231,30 +231,7 @@ create table predicate.predicate_node
     right_operand_id   uuid
         constraint fk_node_right_operand
             references predicate.predicate_node
-            on delete cascade,
-    constraint chk_node_path_expression
-        check ((node_type <> 'PATH_EXPRESSION'::predicate.node_type) OR (path_expression_id IS NOT NULL)),
-    constraint chk_node_value_constant
-        check ((node_type <> 'VALUE_CONSTANT'::predicate.node_type) OR (value_id IS NOT NULL)),
-    constraint chk_logical_operator
-        check ((node_type <> 'LOGICAL_OPERATOR'::predicate.node_type) OR
-               ((operator_type IS NOT NULL) AND (left_operand_id IS NOT NULL))),
-    constraint chk_comparison_operator
-        check ((node_type <> 'COMPARISON_OPERATOR'::predicate.node_type) OR (operator_type IS NOT NULL)),
-    constraint chk_not_operator
-        check ((operator_type <> 'NOT'::predicate.operator_type) OR (right_operand_id IS NULL)),
-    constraint chk_and_or_operator
-        check ((operator_type <> ALL (ARRAY ['AND'::predicate.operator_type, 'OR'::predicate.operator_type])) OR
-               ((left_operand_id IS NOT NULL) AND (right_operand_id IS NOT NULL))),
-    constraint chk_null_operators
-        check ((operator_type <> ALL
-                (ARRAY ['IS_NULL'::predicate.operator_type, 'IS_NOT_NULL'::predicate.operator_type])) OR
-               ((value_id IS NULL) AND (right_operand_id IS NULL))),
-    constraint chk_attribute_exclusivity
-        check ((meta_attribute_id IS NULL) OR (path_expression_id IS NULL)),
-    constraint chk_comparison_operand
-        check ((node_type <> 'COMPARISON_OPERATOR'::predicate.node_type) OR
-               ((meta_attribute_id IS NOT NULL) OR (path_expression_id IS NOT NULL) OR (left_operand_id IS NOT NULL)))
+            on delete cascade
 );
 
 comment on table predicate.predicate_node is 'Для geometry атрибутов с operator_type LT/GT - это DISTANCE_SPHERE операции';

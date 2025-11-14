@@ -41,12 +41,8 @@ public class PredicateStringConverter {
 
     try {
       switch (node.getNodeType()) {
-        case LOGICAL_OPERATOR:
+          case EVALUATION_OPERATION:
           return convertLogicalOperatorToString(node);
-
-        case COMPARISON_OPERATOR:
-          return convertComparisonOperatorToString(node);
-
         case VALUE_CONSTANT:
           return convertValueConstantToString(node);
 
@@ -143,9 +139,6 @@ public class PredicateStringConverter {
       case NOT_IN:
         return convertNotInOperatorToString(node);
 
-      case BETWEEN:
-        return convertBetweenOperatorToString(node);
-
       case IS_NULL:
         return String.format("%s IS NULL", left);
 
@@ -160,7 +153,7 @@ public class PredicateStringConverter {
   /** Конвертирует оператор IN */
   private String convertInOperatorToString(PredicateNode node) {
     String left = convertNodeToString(node.getLeftOperand());
-    List<PredicateNodeValue> values = node.getInValues();
+    List<PredicateNodeValue> values = node.getValues();
 
     if (values == null || values.isEmpty()) {
       return String.format("%s IN ()", left);
@@ -178,7 +171,7 @@ public class PredicateStringConverter {
   /** Конвертирует оператор NOT IN */
   private String convertNotInOperatorToString(PredicateNode node) {
     String left = convertNodeToString(node.getLeftOperand());
-    List<PredicateNodeValue> values = node.getInValues();
+    List<PredicateNodeValue> values = node.getValues();
 
     if (values == null || values.isEmpty()) {
       return String.format("%s NOT IN ()", left);

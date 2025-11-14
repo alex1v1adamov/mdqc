@@ -1,155 +1,70 @@
+// OperatorType.java
 package example.models.predicate;
 
 import example.models.meta.BasicType;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import example.models.meta.BasicTypeCategory;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
+@AllArgsConstructor
 public enum OperatorType {
-  // === ЛОГИЧЕСКИЕ ОПЕРАТОРЫ ===
-  AND(BasicType.BOOLEAN, List.of(BasicType.BOOLEAN), List.of(BasicType.BOOLEAN)),
-  OR(BasicType.BOOLEAN, List.of(BasicType.BOOLEAN), List.of(BasicType.BOOLEAN)),
-  NOT(BasicType.BOOLEAN, List.of(BasicType.BOOLEAN), null),
-  // === ОПЕРАТОРЫ СРАВНЕНИЯ (универсальные) ===
-  EQ(BasicType.BOOLEAN, getAllComparableTypes(), getAllComparableTypes()),
-  NE(BasicType.BOOLEAN, getAllComparableTypes(), getAllComparableTypes()),
-  GT(BasicType.BOOLEAN, getComparableTypes(), getComparableTypes()),
-  LT(BasicType.BOOLEAN, getComparableTypes(), getComparableTypes()),
-  GOE(BasicType.BOOLEAN, getComparableTypes(), getComparableTypes()),
-  LOE(BasicType.BOOLEAN, getComparableTypes(), getComparableTypes()),
-  // === СТРОКОВЫЕ ОПЕРАТОРЫ ===
-  LIKE(BasicType.BOOLEAN, List.of(BasicType.STRING), List.of(BasicType.STRING)),
-  STARTS_WITH(BasicType.BOOLEAN, List.of(BasicType.STRING), List.of(BasicType.STRING)),
-  ENDS_WITH(BasicType.BOOLEAN, List.of(BasicType.STRING), List.of(BasicType.STRING)),
-  CONTAINS(BasicType.BOOLEAN, List.of(BasicType.STRING), List.of(BasicType.STRING)),
-  // === МНОЖЕСТВЕННЫЕ ОПЕРАТОРЫ ===
-  // Правый операнд обрабатывается через inValues
-  IN(BasicType.BOOLEAN, getAllEquatableTypes(), getAllEquatableTypes()),
-  NOT_IN(BasicType.BOOLEAN, getAllEquatableTypes(), null),
-  BETWEEN(BasicType.BOOLEAN, getComparableTypes(), null), // Обрабатывается через inValues
-  // === NULL ОПЕРАТОРЫ ===
-  IS_NULL(BasicType.BOOLEAN, getAllTypes(), null),
-  IS_NOT_NULL(BasicType.BOOLEAN, getAllTypes(), null),
-  // === GEOMETRY ОПЕРАТОРЫ ===
-  DISTANCE_SPHERE(BasicType.DOUBLE, List.of(BasicType.POINT), List.of(BasicType.POINT));
+  // Логические операторы
+  AND(BasicTypeCategory.LOGICAL, BasicTypeCategory.LOGICAL),
+  OR(BasicTypeCategory.LOGICAL, BasicTypeCategory.LOGICAL),
+  NOT(BasicTypeCategory.LOGICAL, BasicTypeCategory.NONE, false, false),
 
-  private final BasicType returnType;
-  private final List<BasicType> allowedLeftTypes;
-  private final List<BasicType> allowedRightTypes;
+  // Null-проверки
+  IS_NULL(BasicTypeCategory.ALL, BasicTypeCategory.NONE, false, false),
+  IS_NOT_NULL(BasicTypeCategory.ALL, BasicTypeCategory.NONE, false, false),
 
+  // Операторы сравнения
+  EQ(BasicTypeCategory.COMPARABLE, BasicTypeCategory.COMPARABLE),
+  NE(BasicTypeCategory.COMPARABLE, BasicTypeCategory.COMPARABLE),
+
+  // Операторы упорядочения
+  GT(BasicTypeCategory.ORDERED, BasicTypeCategory.ORDERED),
+  LT(BasicTypeCategory.ORDERED, BasicTypeCategory.ORDERED),
+  GOE(BasicTypeCategory.ORDERED, BasicTypeCategory.ORDERED),
+  LOE(BasicTypeCategory.ORDERED, BasicTypeCategory.ORDERED),
+
+  // Строковые операторы
+  LIKE(BasicTypeCategory.TEXT, BasicTypeCategory.TEXT),
+  STARTS_WITH(BasicTypeCategory.TEXT, BasicTypeCategory.TEXT),
+  ENDS_WITH(BasicTypeCategory.TEXT, BasicTypeCategory.TEXT),
+  CONTAINS(BasicTypeCategory.TEXT, BasicTypeCategory.TEXT),
+
+  // Операторы множеств
+  IN(BasicTypeCategory.COMPARABLE, BasicTypeCategory.TEXT),
+  NOT_IN(BasicTypeCategory.COMPARABLE, BasicTypeCategory.TEXT),
+
+  // Географические операторы
+  DISTANCE_SPHERE(
+      BasicTypeCategory.SPATIAL, BasicTypeCategory.SPATIAL, true, false, BasicType.DOUBLE);
+
+  private final BasicTypeCategory allowedLeftCategory;
+  private final BasicTypeCategory allowedRightCategory;
+  private final boolean requiresRightOperand;
+  private final boolean typesMustMatch;
+  private final BasicType resultType;
+
+  // Конструктор с дефолтными значениями (requiresRightOperand = true, typesMustMatch = true,
+  // resultType = BOOLEAN)
+  OperatorType(BasicTypeCategory allowedLeftCategory, BasicTypeCategory allowedRightCategory) {
+    this(allowedLeftCategory, allowedRightCategory, true, true, BasicType.BOOLEAN);
+  }
+
+  // Конструктор для операторов с кастомными флагами
   OperatorType(
-      BasicType returnType, List<BasicType> allowedLeftTypes, List<BasicType> allowedRightTypes) {
-    this.returnType = returnType;
-    this.allowedLeftTypes = allowedLeftTypes;
-    this.allowedRightTypes = allowedRightTypes;
-  }
-
-  // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ГРУППИРОВКИ ТИПОВ ===
-
-  private static List<BasicType> getAllTypes() {
-    return Arrays.asList(BasicType.values());
-  }
-
-  private static List<BasicType> getAllEquatableTypes() {
-    return Arrays.asList(
-        BasicType.STRING,
-        BasicType.BOOLEAN,
-        BasicType.INTEGER,
-        BasicType.DOUBLE,
-        BasicType.OFFSET_DATE_TIME,
-        BasicType.ENUM,
-        BasicType.POINT);
-  }
-
-  private static List<BasicType> getAllComparableTypes() {
-    return getAllTypes();
-  }
-
-  private static List<BasicType> getComparableTypes() {
-    return Arrays.asList(BasicType.INTEGER, BasicType.DOUBLE, BasicType.OFFSET_DATE_TIME);
-  }
-
-  private static List<BasicType> getNumericTypes() {
-    return Arrays.asList(BasicType.INTEGER, BasicType.DOUBLE);
-  }
-
-  // === МЕТОДЫ ПРОВЕРКИ СОВМЕСТИМОСТИ ===
-
-  public boolean supportsLeftType(BasicType leftType) {
-    return allowedLeftTypes != null && allowedLeftTypes.contains(leftType);
-  }
-
-  public boolean supportsRightType(BasicType rightType) {
-    return allowedRightTypes != null && allowedRightTypes.contains(rightType);
-  }
-
-  public boolean supportsOperandTypes(BasicType leftType, BasicType rightType) {
-    return supportsLeftType(leftType) && supportsRightType(rightType);
-  }
-
-  public boolean isUnary() {
-    return allowedRightTypes.isEmpty();
-  }
-
-  public boolean isBinary() {
-    return !allowedRightTypes.isEmpty();
-  }
-
-  public boolean requiresInValues() {
-    return this == IN || this == NOT_IN || this == BETWEEN;
-  }
-
-  public boolean isLogical() {
-    return this == AND || this == OR || this == NOT;
-  }
-
-  public boolean isComparison() {
-    return Set.of(EQ, NE, GT, LT, GOE, LOE).contains(this);
-  }
-
-  public boolean isStringOperator() {
-    return Set.of(LIKE, STARTS_WITH, ENDS_WITH, CONTAINS).contains(this);
-  }
-
-  public boolean isSpatialOperator() {
-    return this == DISTANCE_SPHERE;
-  }
-
-  // === ВАЛИДАЦИЯ ===
-
-  public void validateLeftType(BasicType leftType) {
-    if (!supportsLeftType(leftType)) {
-      throw new TypeValidationException(
-          String.format(
-              "Operator '%s' does not support left operand type '%s'. " + "Allowed types: %s",
-              this, leftType, allowedLeftTypes));
-    }
-  }
-
-  public void validateRightType(BasicType rightType) {
-    if (!supportsRightType(rightType)) {
-      throw new TypeValidationException(
-          String.format(
-              "Operator '%s' does not support right operand type '%s'. " + "Allowed types: %s",
-              this, rightType, allowedRightTypes));
-    }
-  }
-
-  public void validateOperandTypes(BasicType leftType, BasicType rightType) {
-    validateLeftType(leftType);
-    validateRightType(rightType);
-  }
-
-  public boolean supportsEntityAttributes() {
-    return Set.of(IS_NULL, IS_NOT_NULL).contains(this);
-  }
-
-  // === ИСКЛЮЧЕНИЕ ДЛЯ ВАЛИДАЦИИ ТИПОВ ===
-  public static class TypeValidationException extends RuntimeException {
-    public TypeValidationException(String message) {
-      super(message);
-    }
+      BasicTypeCategory allowedLeftCategory,
+      BasicTypeCategory allowedRightCategory,
+      boolean requiresRightOperand,
+      boolean typesMustMatch) {
+    this(
+        allowedLeftCategory,
+        allowedRightCategory,
+        requiresRightOperand,
+        typesMustMatch,
+        BasicType.BOOLEAN);
   }
 }

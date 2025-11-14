@@ -1,5 +1,6 @@
 package example.models.predicate;
 
+import example.models.meta.BasicType;
 import example.models.meta.MetaAttribute;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -34,19 +35,18 @@ public class PredicatePathExpression {
   private UUID id;
 
   /**
-   * Корневой атрибут (начало пути) ПРАВИЛА: - Обязательное поле - attributeCategory должен быть
-   * ENTITY - Должен принадлежать той же сущности, что и корень предиката - Тип: всегда
-   * MetaAttribute с category = ENTITY
+   * Конечный атрибут (конец пути) ПРАВИЛА: Обязательное поле;
+   * attributeCategory должен быть типа
+   * BASIC;
    */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "root_attribute_id", nullable = false)
   private MetaAttribute rootAttribute;
 
   /**
-   * Цепочка атрибутов для навигации ПРАВИЛА: - Может быть пустым (путь из одного сегмента) - Все
-   * атрибуты кроме последнего должны иметь category = ENTITY - Последний атрибут должен иметь
-   * category = BASIC - Порядок определяет последовательность навигации - Все атрибуты должны быть
-   * совместимы по типам
+   * Цепочка атрибутов для навигации ПРАВИЛА: Может быть пустым (путь из одного сегмента); Все
+   * атрибуты должны иметь category = ENTITY;
+   * Порядок определяет последовательность навигации; Все атрибуты должны быть совместимы по типам
    */
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinTable(

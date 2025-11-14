@@ -1,200 +1,210 @@
 package example.service;
 
-import example.models.predicate.*;
-import example.models.meta.MetaAttribute;
-import example.models.meta.BasicType;
 import example.models.meta.AttributeCategory;
+import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEnumValue;
+import example.models.predicate.*;
 import example.repo.PredicateDefinitionRepository;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
 public class ConsolePredicateVisualizer {
 
-    private static final String INDENT = "    ";
-    private static final String CONNECTOR = "│   ";
-    private static final String BRANCH = "├── ";
-    private static final String LAST_BRANCH = "└── ";
-    private static final String EMPTY_INDENT = "    ";
-    private final PredicateDefinitionRepository predicateDefinitionRepository;
+  private static final String INDENT = "    ";
+  private static final String CONNECTOR = "│   ";
+  private static final String BRANCH = "├── ";
+  private static final String LAST_BRANCH = "└── ";
+  private static final String EMPTY_INDENT = "    ";
+  private final PredicateDefinitionRepository predicateDefinitionRepository;
 
-    @Transactional(readOnly = true)
-    public String visualize(UUID id) {
-        PredicateDefinition predicateDefinition = predicateDefinitionRepository.findById(id).get();
+  @Transactional(readOnly = true)
+  public String visualize(UUID id) {
+    PredicateDefinition predicateDefinition = predicateDefinitionRepository.findById(id).get();
 
+    StringBuilder sb = new StringBuilder();
+    sb.append("PredicateDefinition: ")
+        .append(predicateDefinition.getName())
+        .append(". ID: ")
+        .append(predicateDefinition.getId())
+        .append("\n");
+    sb.append("Target Entity: ")
+        .append(predicateDefinition.getMetaEntity().getName())
+        .append("\n\n");
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("PredicateDefinition: ").append(predicateDefinition.getName()).append(". ID: ").append(predicateDefinition.getId()).append("\n");
-        sb.append("Target Entity: ").append(predicateDefinition.getMetaEntity().getName()).append("\n\n");
-
-        if (predicateDefinition.getRootNode() != null) {
-            visualizeNode(sb, predicateDefinition.getRootNode(), "", true);
-        } else {
-            sb.append("(empty predicate)");
-        }
-
-        return sb.toString();
+    if (predicateDefinition.getRootNode() != null) {
+      visualizeNode(sb, predicateDefinition.getRootNode(), "", true);
+    } else {
+      sb.append("(empty predicate)");
     }
 
-    private void visualizeNode(StringBuilder sb, PredicateNode node, String prefix, boolean isLast) {
-        String currentPrefix = prefix + (isLast ? LAST_BRANCH : BRANCH);
-        String childPrefix = prefix + (isLast ? EMPTY_INDENT : CONNECTOR);
+    return sb.toString();
+  }
 
-        // Основная информация об узле
-        sb.append(currentPrefix).append(node.getNodeType());
+  private void visualizeNode(StringBuilder sb, PredicateNode node, String prefix, boolean isLast) {
+    String currentPrefix = prefix + (isLast ? LAST_BRANCH : BRANCH);
+    String childPrefix = prefix + (isLast ? EMPTY_INDENT : CONNECTOR);
 
-        if (node.getOperatorType() != null) {
-            sb.append(" (").append(node.getOperatorType()).append(")");
-        }
-        sb.append("\n");
+    // Основная информация об узле
+    sb.append(currentPrefix).append(node.getNodeType());
 
-        // Дополнительная информация в зависимости от типа узла
-        switch (node.getNodeType()) {
-            case PATH_EXPRESSION -> visualizePathExpression(sb, node.getPathExpression(), childPrefix, true);
-            case VALUE_CONSTANT -> visualizeValueConstant(sb, node.getValue(), childPrefix, true);
-            case COMPARISON_OPERATOR -> visualizeComparisonOperator(sb, node, childPrefix);
-            case LOGICAL_OPERATOR -> visualizeLogicalOperator(sb, node, childPrefix);
-        }
+    if (node.getOperatorType() != null) {
+      sb.append(" (").append(node.getOperatorType()).append(")");
+    }
+    sb.append("\n");
+
+    // Дополнительная информация в зависимости от типа узла
+    switch (node.getNodeType()) {
+      case PATH_EXPRESSION ->
+          visualizePathExpression(sb, node.getPathExpression(), childPrefix, true);
+      case VALUE_CONSTANT -> visualizeValueConstant(sb, node.getValue(), childPrefix, true);
+      case EVALUATION_OPERATION -> visualizeComparisonOperator(sb, node, childPrefix);
+    }
+  }
+
+  private void visualizePathExpression(
+      StringBuilder sb, PredicatePathExpression pathExpr, String prefix, boolean isLast) {
+    String currentPrefix = prefix + (isLast ? LAST_BRANCH : BRANCH);
+    String childPrefix = prefix + (isLast ? EMPTY_INDENT : CONNECTOR);
+
+    sb.append(currentPrefix)
+        .append("PATH_EXPRESSION: ")
+        .append(getPathString(pathExpr))
+        .append("\n");
+
+    // Корневой атрибут
+    sb.append(childPrefix)
+        .append(BRANCH)
+        .append("rootAttribute: ")
+        .append(visualizeMetaAttribute(pathExpr.getRootAttribute()))
+        .append("\n");
+
+    // Атрибуты пути
+    List<MetaAttribute> pathAttributes = pathExpr.getPathAttributes();
+    if (!pathAttributes.isEmpty()) {
+      sb.append(childPrefix).append(BRANCH).append("pathAttributes:\n");
+      for (int i = 0; i < pathAttributes.size(); i++) {
+        boolean lastAttr = i == pathAttributes.size() - 1;
+        String attrPrefix = childPrefix + CONNECTOR;
+        sb.append(attrPrefix)
+            .append(lastAttr ? LAST_BRANCH : BRANCH)
+            .append(visualizeMetaAttribute(pathAttributes.get(i)))
+            .append("\n");
+      }
+    } else {
+      sb.append(childPrefix).append(LAST_BRANCH).append("pathAttributes: []\n");
+    }
+  }
+
+  private void visualizeValueConstant(
+      StringBuilder sb, PredicateNodeValue value, String prefix, boolean isLast) {
+    String currentPrefix = prefix + (isLast ? LAST_BRANCH : BRANCH);
+
+    sb.append(currentPrefix)
+        .append("VALUE_CONSTANT: ")
+        .append(visualizeNodeValue(value))
+        .append("\n");
+  }
+
+  private void visualizeComparisonOperator(StringBuilder sb, PredicateNode node, String prefix) {
+    // Левый операнд
+    if (node.getLeftOperand() != null) {
+      visualizeNode(sb, node.getLeftOperand(), prefix, false);
     }
 
-    private void visualizePathExpression(StringBuilder sb, PredicatePathExpression pathExpr,
-                                       String prefix, boolean isLast) {
-        String currentPrefix = prefix + (isLast ? LAST_BRANCH : BRANCH);
-        String childPrefix = prefix + (isLast ? EMPTY_INDENT : CONNECTOR);
-
-        sb.append(currentPrefix).append("PATH_EXPRESSION: ").append(getPathString(pathExpr)).append("\n");
-
-        // Корневой атрибут
-        sb.append(childPrefix).append(BRANCH).append("rootAttribute: ")
-          .append(visualizeMetaAttribute(pathExpr.getRootAttribute())).append("\n");
-
-        // Атрибуты пути
-        List<MetaAttribute> pathAttributes = pathExpr.getPathAttributes();
-        if (!pathAttributes.isEmpty()) {
-            sb.append(childPrefix).append(BRANCH).append("pathAttributes:\n");
-            for (int i = 0; i < pathAttributes.size(); i++) {
-                boolean lastAttr = i == pathAttributes.size() - 1;
-                String attrPrefix = childPrefix + CONNECTOR;
-                sb.append(attrPrefix).append(lastAttr ? LAST_BRANCH : BRANCH)
-                  .append(visualizeMetaAttribute(pathAttributes.get(i))).append("\n");
-            }
-        } else {
-            sb.append(childPrefix).append(LAST_BRANCH).append("pathAttributes: []\n");
-        }
+    // Правый операнд (для бинарных операторов)
+    if (node.getRightOperand() != null) {
+      visualizeNode(sb, node.getRightOperand(), prefix, false);
     }
 
-    private void visualizeValueConstant(StringBuilder sb, PredicateNodeValue value,
-                                      String prefix, boolean isLast) {
-        String currentPrefix = prefix + (isLast ? LAST_BRANCH : BRANCH);
+    // Множественные значения (IN, BETWEEN)
+    if (node.getValues() != null && !node.getValues().isEmpty()) {
+      String valuesPrefix = prefix + CONNECTOR;
+      sb.append(valuesPrefix).append(BRANCH).append("inValues: ");
 
-        sb.append(currentPrefix).append("VALUE_CONSTANT: ")
-          .append(visualizeNodeValue(value)).append("\n");
+      sb.append("[IN - ").append(node.getValues().size()).append(" values]\n");
+
+      for (int i = 0; i < node.getValues().size(); i++) {
+        boolean lastValue = i == node.getValues().size() - 1;
+        String valuePrefix = valuesPrefix + CONNECTOR;
+        sb.append(valuePrefix)
+            .append(lastValue ? LAST_BRANCH : BRANCH)
+            .append("[")
+            .append(i)
+            .append("]: ")
+            .append(visualizeNodeValue(node.getValues().get(i)))
+            .append("\n");
+      }
     }
 
-    private void visualizeComparisonOperator(StringBuilder sb, PredicateNode node, String prefix) {
-        // Левый операнд
-        if (node.getLeftOperand() != null) {
-            visualizeNode(sb, node.getLeftOperand(), prefix, false);
-        }
+    // Значение (для унарных операторов)
+    if (node.getValue() != null) {
+      visualizeValueConstant(sb, node.getValue(), prefix, true);
+    }
+  }
 
-        // Правый операнд (для бинарных операторов)
-        if (node.getRightOperand() != null) {
-            visualizeNode(sb, node.getRightOperand(), prefix, false);
-        }
-
-        // Множественные значения (IN, BETWEEN)
-        if (node.getInValues() != null && !node.getInValues().isEmpty()) {
-            String valuesPrefix = prefix + CONNECTOR;
-            sb.append(valuesPrefix).append(BRANCH).append("inValues: ");
-
-            if (node.getOperatorType() == OperatorType.BETWEEN) {
-                sb.append("[BETWEEN - 2 values]\n");
-            } else {
-                sb.append("[IN - ").append(node.getInValues().size()).append(" values]\n");
-            }
-
-            for (int i = 0; i < node.getInValues().size(); i++) {
-                boolean lastValue = i == node.getInValues().size() - 1;
-                String valuePrefix = valuesPrefix + CONNECTOR;
-                sb.append(valuePrefix).append(lastValue ? LAST_BRANCH : BRANCH)
-                  .append("[").append(i).append("]: ")
-                  .append(visualizeNodeValue(node.getInValues().get(i))).append("\n");
-            }
-        }
-
-        // Значение (для унарных операторов)
-        if (node.getValue() != null) {
-            visualizeValueConstant(sb, node.getValue(), prefix, true);
-        }
+  private void visualizeLogicalOperator(StringBuilder sb, PredicateNode node, String prefix) {
+    // Левый операнд
+    if (node.getLeftOperand() != null) {
+      visualizeNode(sb, node.getLeftOperand(), prefix, false);
     }
 
-    private void visualizeLogicalOperator(StringBuilder sb, PredicateNode node, String prefix) {
-        // Левый операнд
-        if (node.getLeftOperand() != null) {
-            visualizeNode(sb, node.getLeftOperand(), prefix, false);
-        }
-
-        // Правый операнд (для AND/OR)
-        if (node.getRightOperand() != null) {
-            visualizeNode(sb, node.getRightOperand(), prefix, true);
-        }
-
-        // Для NOT только левый операнд
-        if (node.getOperatorType() == OperatorType.NOT && node.getLeftOperand() != null) {
-            visualizeNode(sb, node.getLeftOperand(), prefix, true);
-        }
+    // Правый операнд (для AND/OR)
+    if (node.getRightOperand() != null) {
+      visualizeNode(sb, node.getRightOperand(), prefix, true);
     }
 
-    private String getPathString(PredicatePathExpression pathExpr) {
-        if (pathExpr == null) return "null";
+    // Для NOT только левый операнд
+    if (node.getOperatorType() == OperatorType.NOT && node.getLeftOperand() != null) {
+      visualizeNode(sb, node.getLeftOperand(), prefix, true);
+    }
+  }
 
-        StringBuilder path = new StringBuilder(pathExpr.getRootAttribute().getName());
+  private String getPathString(PredicatePathExpression pathExpr) {
+    if (pathExpr == null) return "null";
 
-        for (MetaAttribute attr : pathExpr.getPathAttributes()) {
-            path.append(".").append(attr.getName());
-        }
+    StringBuilder path = new StringBuilder(pathExpr.getRootAttribute().getName());
 
-        return path.toString();
+    for (MetaAttribute attr : pathExpr.getPathAttributes()) {
+      path.append(".").append(attr.getName());
     }
 
-    private String visualizeMetaAttribute(MetaAttribute attribute) {
-        if (attribute == null) return "null";
+    return path.toString();
+  }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(attribute.getName())
-          .append(" (")
-          .append(attribute.getAttributeCategory());
+  private String visualizeMetaAttribute(MetaAttribute attribute) {
+    if (attribute == null) return "null";
 
-        if (attribute.getAttributeCategory() == AttributeCategory.BASIC) {
-            sb.append(":").append(attribute.getBasicType());
-        } else {
-            sb.append("->").append(attribute.getAttributeEntityType().getName());
-        }
+    StringBuilder sb = new StringBuilder();
+    sb.append(attribute.getName()).append(" (").append(attribute.getAttributeCategory());
 
-        sb.append(")");
-        return sb.toString();
+    if (attribute.getAttributeCategory() == AttributeCategory.BASIC) {
+      sb.append(":").append(attribute.getBasicType());
+    } else {
+      sb.append("->").append(attribute.getAttributeEntityType().getName());
     }
 
-    private String visualizeNodeValue(PredicateNodeValue value) {
-        if (value == null) return "null";
+    sb.append(")");
+    return sb.toString();
+  }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(value.getValueType()).append(": ");
+  private String visualizeNodeValue(PredicateNodeValue value) {
+    if (value == null) return "null";
 
-        Object actualValue = value.getValue();
-        if (actualValue instanceof MetaEnumValue enumValue) {
-            sb.append(enumValue.getName()).append(" (").append(enumValue.getStorageValue()).append(")");
-        } else {
-            sb.append(actualValue);
-        }
+    StringBuilder sb = new StringBuilder();
+    sb.append(value.getValueType()).append(": ");
 
-        return sb.toString();
+    Object actualValue = value.getValue();
+    if (actualValue instanceof MetaEnumValue enumValue) {
+      sb.append(enumValue.getName()).append(" (").append(enumValue.getStorageValue()).append(")");
+    } else {
+      sb.append(actualValue);
     }
+
+    return sb.toString();
+  }
 }
