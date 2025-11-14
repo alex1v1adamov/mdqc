@@ -80,7 +80,7 @@ public class ConsolePredicateVisualizer {
     sb.append(childPrefix)
         .append(BRANCH)
         .append("rootAttribute: ")
-        .append(visualizeMetaAttribute(pathExpr.getRootAttribute()))
+        .append(visualizeMetaAttribute(pathExpr.getFinalPathAttribute()))
         .append("\n");
 
     // Атрибуты пути
@@ -167,7 +167,7 @@ public class ConsolePredicateVisualizer {
   private String getPathString(PredicatePathExpression pathExpr) {
     if (pathExpr == null) return "null";
 
-    StringBuilder path = new StringBuilder(pathExpr.getRootAttribute().getName());
+    StringBuilder path = new StringBuilder(pathExpr.getFinalPathAttribute().getName());
 
     for (MetaAttribute attr : pathExpr.getPathAttributes()) {
       path.append(".").append(attr.getName());

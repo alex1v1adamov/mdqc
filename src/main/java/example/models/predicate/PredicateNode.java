@@ -105,7 +105,7 @@ public class PredicateNode {
     public BasicType getNodeReturnType() {
         return switch (nodeType) {
             case VALUE_CONSTANT -> value != null ?  value.getValueType() : values.stream().map(PredicateNodeValue::getValueType).findAny().get();
-            case PATH_EXPRESSION -> pathExpression.getRootAttribute().getBasicType();
+            case PATH_EXPRESSION -> pathExpression.getFinalPathAttribute().getBasicType();
             case EVALUATION_OPERATION -> operatorType.getResultType();
         };
     }

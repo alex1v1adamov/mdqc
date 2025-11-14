@@ -337,7 +337,7 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
     // Новый способ построения пути - последний атрибут в цепочке
     if (pathExpression.getPathAttributes().isEmpty()) {
-      return pathExpression.getRootAttribute();
+      return pathExpression.getFinalPathAttribute();
     } else {
       return pathExpression.getPathAttributes().get(pathExpression.getPathAttributes().size() - 1);
     }
@@ -462,17 +462,17 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
   public ValidationResult validatePathExpression(PredicatePathExpression pathExpression) {
     List<String> errors = new ArrayList<>();
     // rootAttribute обязателен
-    if (pathExpression.getRootAttribute() == null) {
+    if (pathExpression.getFinalPathAttribute() == null) {
       errors.add("Path expression must have rootAttribute defined");
     }
-    if (AttributeCategory.BASIC != pathExpression.getRootAttribute().getAttributeCategory()) {
+    if (AttributeCategory.BASIC != pathExpression.getFinalPathAttribute().getAttributeCategory()) {
       errors.add("Path expression root must be BASIC");
     }
 
     // Валидация цепочки атрибутов с новым подходом
     if (pathExpression.getPathAttributes() != null
         && !pathExpression.getPathAttributes().isEmpty()) {
-      MetaAttribute previousAttribute = pathExpression.getRootAttribute();
+      MetaAttribute previousAttribute = pathExpression.getFinalPathAttribute();
       for (int i = 0; i < pathExpression.getPathAttributes().size(); i++) {
         MetaAttribute currentAttribute = pathExpression.getPathAttributes().get(i);
         if (currentAttribute == null) {

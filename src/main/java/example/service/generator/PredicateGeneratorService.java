@@ -337,7 +337,7 @@ class ExpressionBuilder {
             currentExpression = buildPathStep(currentExpression, pathAttribute);
         }
         // Обрабатываем корневой атрибут
-        MetaAttribute rootAttribute = pathExpression.getRootAttribute();
+        MetaAttribute rootAttribute = pathExpression.getFinalPathAttribute();
         currentExpression = buildPathStep(currentExpression, rootAttribute);
 
 

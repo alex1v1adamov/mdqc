@@ -169,7 +169,7 @@ create table predicate.predicate_path_expression
 (
     id                  uuid default gen_random_uuid() not null
         primary key,
-    root_attribute_id   uuid                           not null
+    final_path_attribute   uuid                           not null
         constraint fk_path_root_attribute
             references meta.meta_attribute
             on delete cascade,
@@ -185,7 +185,7 @@ alter table predicate.predicate_path_expression
     owner to postgres;
 
 create index idx_path_expression_root
-    on predicate.predicate_path_expression (root_attribute_id);
+    on predicate.predicate_path_expression (final_path_attribute);
 
 create index idx_path_expression_target
     on predicate.predicate_path_expression (target_attribute_id);

@@ -246,10 +246,10 @@ public class PredicateStringConverter {
     StringBuilder path = new StringBuilder();
 
     // Добавляем корневой атрибут (через репозиторий)
-    if (pathExpression.getRootAttribute() != null) {
+    if (pathExpression.getFinalPathAttribute() != null) {
       String rootAttrName =
           metaAttributeRepository
-              .findById(pathExpression.getRootAttribute().getId())
+              .findById(pathExpression.getFinalPathAttribute().getId())
               .map(MetaAttribute::getName)
               .orElse("MISSING_ROOT_ATTR");
       path.append(rootAttrName);

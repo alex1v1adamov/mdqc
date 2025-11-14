@@ -142,7 +142,7 @@
                     '550e8400-e29b-41d4-a716-446655440001');
 
 -- Создаем выражение пути: clinic.isOpen
-            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440013');
 
             INSERT INTO predicate.predicate_path_expression_attributes
@@ -181,7 +181,7 @@
                     '550e8400-e29b-41d4-a716-446655440001');
 
 -- Создаем выражение пути для petType
-            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440002', '880e8400-e29b-41d4-a716-446655440004');
 
 -- Создаем значение enum DOG
@@ -232,7 +232,7 @@
                     '550e8400-e29b-41d4-a716-446655440001');
 
 -- Создаем выражение пути для bsDateTime
-            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440003', '880e8400-e29b-41d4-a716-446655440015');
 
 -- Создаем значение даты (например, 2024-01-01 00:00:00+00)
@@ -268,7 +268,7 @@
                     '550e8400-e29b-41d4-a716-446655440001');
 
 -- Создаем выражение пути для nickname
-            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440004', '880e8400-e29b-41d4-a716-446655440002');
 
 -- Создаем узел PATH_EXPRESSION для nickname
@@ -296,7 +296,7 @@
                     '550e8400-e29b-41d4-a716-446655440001');
 
 -- Создаем выражение пути для petType
-            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440005', '880e8400-e29b-41d4-a716-446655440004');
 
 -- Создаем значения для IN списка (DOG и CAT)
@@ -339,7 +339,7 @@
                     '550e8400-e29b-41d4-a716-446655440001');
 
 -- Часть 1: nickname IS_NOT_NULL
-            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440006', '880e8400-e29b-41d4-a716-446655440002');
 
             INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
@@ -350,7 +350,7 @@
                     'cc0e8400-e29b-41d4-a716-446655440016');
 
 -- Часть 2: rating IS_NOT_NULL
-            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440007', '880e8400-e29b-41d4-a716-446655440016');
 
             INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
@@ -361,7 +361,7 @@
                     'cc0e8400-e29b-41d4-a716-446655440018');
 
 -- Часть 3: clinic.clinicName IS_NOT_NULL (навигация через clinic)
-            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440008', '880e8400-e29b-41d4-a716-446655440012');
 
 -- Добавляем атрибут clinicName в путь
@@ -400,7 +400,7 @@
                 '550e8400-e29b-41d4-a716-446655440001');
 
 -- Создаем выражение пути для rating
-        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
         VALUES ('aa0e8400-e29b-41d4-a716-446655440009', '880e8400-e29b-41d4-a716-446655440016');
 
 -- Создаем значения для IN списка (2, 4, 5)
@@ -443,7 +443,7 @@
                     '550e8400-e29b-41d4-a716-446655440002');
 
 -- Создаем выражение пути для geometry
-            INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440010', '7ac5eb66-2582-418f-b052-e5f786d96a9a');
 
 -- Создаем узел PATH_EXPRESSION для geometry
@@ -494,7 +494,7 @@
             -- === ЧАСТЬ 1: (pet.rating >= 4 AND pet.petType IN ('CAT', 'DOG') AND pet.clinic.isOpen = true AND расстояние LT 100) ===
 
         -- Подчасть 1.1: pet.rating >= 4
-        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
         VALUES ('aa0e8400-e29b-41d4-a716-446655440011', '880e8400-e29b-41d4-a716-446655440016');
 
         INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
@@ -511,7 +511,7 @@
                 'cc0e8400-e29b-41d4-a716-446655440032', 'cc0e8400-e29b-41d4-a716-446655440033');
 
         -- Подчасть 1.2: pet.petType IN ('CAT', 'DOG')
-        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
         VALUES ('aa0e8400-e29b-41d4-a716-446655440012', '880e8400-e29b-41d4-a716-446655440004');
 
         INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
@@ -533,7 +533,7 @@
                 'cc0e8400-e29b-41d4-a716-446655440035', 'cc0e8400-e29b-41d4-a716-446655440036');
 
         -- Подчасть 1.3: pet.clinic.isOpen = true
-        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
         VALUES ('aa0e8400-e29b-41d4-a716-446655440013', '880e8400-e29b-41d4-a716-446655440013');
 
         INSERT INTO predicate.predicate_path_expression_attributes (path_expression_id, meta_attribute_id, attribute_order)
@@ -554,7 +554,7 @@
 
         -- Подчасть 1.4: расстояние до точки LT 100 метров
         -- Выражение пути для geometry клиники
-        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
         VALUES ('aa0e8400-e29b-41d4-a716-446655440014', '7ac5eb66-2582-418f-b052-e5f786d96a9a');
 
         INSERT INTO predicate.predicate_path_expression_attributes (path_expression_id, meta_attribute_id, attribute_order)
@@ -602,7 +602,7 @@
         -- === ЧАСТЬ 2: (pet.nickname LIKE 'Л%' AND loudRadius > 2.5 AND loudRadius LT 6.0 AND clinicName LIKE '%Главная%' AND bsDateTime >= '2025-11-09') ===
 
         -- Подчасть 2.1: pet.nickname LIKE 'Л%'
-        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
         VALUES ('aa0e8400-e29b-41d4-a716-446655440015', '880e8400-e29b-41d4-a716-446655440002');
 
         INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
@@ -619,7 +619,7 @@
                 'cc0e8400-e29b-41d4-a716-446655440049', 'cc0e8400-e29b-41d4-a716-446655440050');
 
         -- Подчасть 2.2: pet.loudRadius > 2.5
-        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
         VALUES ('aa0e8400-e29b-41d4-a716-446655440016', '880e8400-e29b-41d4-a716-446655440018');
 
         INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
@@ -647,7 +647,7 @@
                 'cc0e8400-e29b-41d4-a716-446655440052', 'cc0e8400-e29b-41d4-a716-446655440055');
 
         -- Подчасть 2.4: clinic.clinicName LIKE '%Главная%'
-        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
         VALUES ('aa0e8400-e29b-41d4-a716-446655440017', '880e8400-e29b-41d4-a716-446655440012');
 
         INSERT INTO predicate.predicate_path_expression_attributes (path_expression_id, meta_attribute_id, attribute_order)
@@ -667,7 +667,7 @@
                 'cc0e8400-e29b-41d4-a716-446655440057', 'cc0e8400-e29b-41d4-a716-446655440058');
 
         -- Подчасть 2.5: pet.bsDateTime >= '2025-11-09'
-        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
         VALUES ('aa0e8400-e29b-41d4-a716-446655440018', '880e8400-e29b-41d4-a716-446655440015');
 
         INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)

@@ -39,8 +39,8 @@ public class PredicatePathExpression {
    * BASIC;
    */
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "root_attribute_id", nullable = false)
-  private MetaAttribute rootAttribute;
+  @JoinColumn(name = "final_path_attribute", nullable = false)
+  private MetaAttribute finalPathAttribute;
 
   /**
    * Цепочка атрибутов для навигации ПРАВИЛА: Может быть пустым (путь из одного сегмента); Все
