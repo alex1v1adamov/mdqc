@@ -7,7 +7,6 @@ import example.models.meta.MetaEntity;
 import example.models.predicate.PredicateDefinition;
 import example.repo.MetaEntityRepository;
 import example.repo.PredicateDefinitionRepository;
-import example.service.PredicateStringConverter;
 import example.service.generator.PredicateGeneratorService;
 import example.service.validation.MetaEntityValidationService;
 import example.service.validation.PredicateValidationService;
@@ -25,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class PredicateController {
 
-  private final PredicateStringConverter predicateConverter;
+  //  private final PredicateStringConverter predicateConverter;
   private final PredicateDefinitionRepository predicateRepository;
   private final MetaEntityRepository metaEntityRepository;
   private final EntityManager entityManager;
@@ -33,16 +32,16 @@ public class PredicateController {
   private final PredicateValidationService metaDataValidationService;
   private final MetaEntityValidationService metaEntityValidationService;
 
-  @SneakyThrows
-  @GetMapping("/predicate/{id}/string")
-  public String getPredicateAsString(@PathVariable UUID id) {
-    PredicateDefinition predicate =
-        predicateRepository
-            .findById(id)
-            .orElseThrow(() -> new RuntimeException("Predicate not found!!!"));
-    predicateRepository.findAll();
-    return predicateConverter.convertToString(predicate);
-  }
+//  @SneakyThrows
+//  @GetMapping("/predicate/{id}/string")
+//  public String getPredicateAsString(@PathVariable UUID id) {
+//    PredicateDefinition predicate =
+//        predicateRepository
+//            .findById(id)
+//            .orElseThrow(() -> new RuntimeException("Predicate not found!!!"));
+//    predicateRepository.findAll();
+//    return predicateConverter.convertToString(predicate);
+//  }
 
   @SneakyThrows
   @GetMapping("/predicate/{id}/validate")

@@ -24,7 +24,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <jar.finalName>elide-spring-boot</jar.finalName>
-        <java.version>17</java.version>
+        <java.version>21</java.version>
 
         <elide.version>7.1.0</elide.version>
 
