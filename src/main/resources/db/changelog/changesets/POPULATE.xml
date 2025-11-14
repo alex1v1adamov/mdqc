@@ -69,7 +69,8 @@
                  'STRING', NULL, false, NULL),
 
                 -- clinicName - строковое поле
-                ('880e8400-e29b-41d4-a716-446655440012', 'clinicName', '550e8400-e29b-41d4-a716-446655440002', 'SINGULAR',
+                ('880e8400-e29b-41d4-a716-446655440012', 'clinicName', '550e8400-e29b-41d4-a716-446655440002',
+                 'SINGULAR',
                  'BASIC',
                  'STRING', NULL, false, NULL),
 
@@ -146,8 +147,7 @@
 
             INSERT INTO predicate.predicate_path_expression_attributes
                 (path_expression_id, meta_attribute_id, attribute_order)
-            VALUES
-                ('aa0e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440003', 0);
+            VALUES ('aa0e8400-e29b-41d4-a716-446655440001', '880e8400-e29b-41d4-a716-446655440003', 0);
 -- Создаем значение true
             INSERT INTO predicate.predicate_node_value (id, boolean_value, value_type)
             VALUES ('bb0e8400-e29b-41d4-a716-446655440001', true, 'BOOLEAN');
@@ -481,4 +481,273 @@
             UPDATE predicate.predicate_definition
             SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440031'
             WHERE id = '990e8400-e29b-41d4-a716-446655440009';</sql>
-    </changeSet></databaseChangeLog>
+    </changeSet>
+
+    <changeSet id="populate-predicate-complex-advanced" author="system">
+        <comment>Create complex advanced predicate with spatial queries, logical conditions and string operations</comment>
+        <sql>
+            -- 10. Сложный предикат: комбинация пространственных запросов, логических условий и строковых операций
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
+            VALUES ('990e8400-e29b-41d4-a716-446655440010', 'AdvancedComplexPets',
+                    '550e8400-e29b-41d4-a716-446655440001');
+
+            -- === ЧАСТЬ 1: (pet.rating >= 4 AND pet.petType IN ('CAT', 'DOG') AND pet.clinic.isOpen = true AND расстояние LT 100) ===
+
+        -- Подчасть 1.1: pet.rating >= 4
+        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440011', '880e8400-e29b-41d4-a716-446655440016');
+
+        INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440032', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440011');
+
+        INSERT INTO predicate.predicate_node_value (id, integer_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440011', 4, 'INTEGER');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440033', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440011');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440034', 'EVALUATION_OPERATION', 'GOE',
+                'cc0e8400-e29b-41d4-a716-446655440032', 'cc0e8400-e29b-41d4-a716-446655440033');
+
+        -- Подчасть 1.2: pet.petType IN ('CAT', 'DOG')
+        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440012', '880e8400-e29b-41d4-a716-446655440004');
+
+        INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440035', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440012');
+
+        INSERT INTO predicate.predicate_node_value (id, enum_value_id, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440012', '770e8400-e29b-41d4-a716-446655440001', 'ENUM'),
+               ('bb0e8400-e29b-41d4-a716-446655440013', '770e8400-e29b-41d4-a716-446655440002', 'ENUM');
+
+        INSERT INTO predicate.predicate_node (id, node_type)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440036', 'VALUE_CONSTANT');
+
+        INSERT INTO predicate.predicate_node_in_values (predicate_node_id, node_value_id, value_order)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440036', 'bb0e8400-e29b-41d4-a716-446655440012', 0),
+               ('cc0e8400-e29b-41d4-a716-446655440036', 'bb0e8400-e29b-41d4-a716-446655440013', 1);
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440037', 'EVALUATION_OPERATION', 'IN',
+                'cc0e8400-e29b-41d4-a716-446655440035', 'cc0e8400-e29b-41d4-a716-446655440036');
+
+        -- Подчасть 1.3: pet.clinic.isOpen = true
+        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440013', '880e8400-e29b-41d4-a716-446655440013');
+
+        INSERT INTO predicate.predicate_path_expression_attributes (path_expression_id, meta_attribute_id, attribute_order)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440013', '880e8400-e29b-41d4-a716-446655440003', 0);
+
+        INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440038', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440013');
+
+        INSERT INTO predicate.predicate_node_value (id, boolean_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440014', true, 'BOOLEAN');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440039', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440014');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440040', 'EVALUATION_OPERATION', 'EQ',
+                'cc0e8400-e29b-41d4-a716-446655440038', 'cc0e8400-e29b-41d4-a716-446655440039');
+
+        -- Подчасть 1.4: расстояние до точки LT 100 метров
+        -- Выражение пути для geometry клиники
+        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440014', '7ac5eb66-2582-418f-b052-e5f786d96a9a');
+
+        INSERT INTO predicate.predicate_path_expression_attributes (path_expression_id, meta_attribute_id, attribute_order)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440014', '880e8400-e29b-41d4-a716-446655440003', 0);
+
+        INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440041', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440014');
+
+        -- Точка для расчета расстояния (координаты Москвы)
+        INSERT INTO predicate.predicate_node_value (id, point_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440015', ST_GeomFromText('POINT(37.6175 55.7558)', 4326), 'POINT');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440042', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440015');
+
+        -- DISTANCE_SPHERE операция
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440043', 'EVALUATION_OPERATION', 'DISTANCE_SPHERE',
+                'cc0e8400-e29b-41d4-a716-446655440041', 'cc0e8400-e29b-41d4-a716-446655440042');
+
+        -- Сравнение расстояния
+        INSERT INTO predicate.predicate_node_value (id, double_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440016', 100.0, 'DOUBLE');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440044', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440016');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440045', 'EVALUATION_OPERATION', 'LT',
+                'cc0e8400-e29b-41d4-a716-446655440043', 'cc0e8400-e29b-41d4-a716-446655440044');
+
+        -- Объединение подчасти 1: (rating >= 4 AND petType IN AND isOpen = true AND расстояние LT 100)
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440046', 'EVALUATION_OPERATION', 'AND',
+                'cc0e8400-e29b-41d4-a716-446655440034', 'cc0e8400-e29b-41d4-a716-446655440037');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440047', 'EVALUATION_OPERATION', 'AND',
+                'cc0e8400-e29b-41d4-a716-446655440046', 'cc0e8400-e29b-41d4-a716-446655440040');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440048', 'EVALUATION_OPERATION', 'AND',
+                'cc0e8400-e29b-41d4-a716-446655440047', 'cc0e8400-e29b-41d4-a716-446655440045');
+
+        -- === ЧАСТЬ 2: (pet.nickname LIKE 'Л%' AND loudRadius > 2.5 AND loudRadius LT 6.0 AND clinicName LIKE '%Главная%' AND bsDateTime >= '2025-11-09') ===
+
+        -- Подчасть 2.1: pet.nickname LIKE 'Л%'
+        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440015', '880e8400-e29b-41d4-a716-446655440002');
+
+        INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440049', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440015');
+
+        INSERT INTO predicate.predicate_node_value (id, string_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440017', 'Л%', 'STRING');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440050', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440017');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440051', 'EVALUATION_OPERATION', 'LIKE',
+                'cc0e8400-e29b-41d4-a716-446655440049', 'cc0e8400-e29b-41d4-a716-446655440050');
+
+        -- Подчасть 2.2: pet.loudRadius > 2.5
+        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440016', '880e8400-e29b-41d4-a716-446655440018');
+
+        INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440052', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440016');
+
+        INSERT INTO predicate.predicate_node_value (id, double_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440018', 2.5, 'DOUBLE');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440053', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440018');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440054', 'EVALUATION_OPERATION', 'GT',
+                'cc0e8400-e29b-41d4-a716-446655440052', 'cc0e8400-e29b-41d4-a716-446655440053');
+
+        -- Подчасть 2.3: pet.loudRadius LT 6.0
+        INSERT INTO predicate.predicate_node_value (id, double_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440019', 6.0, 'DOUBLE');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440055', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440019');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440056', 'EVALUATION_OPERATION', 'LT',
+                'cc0e8400-e29b-41d4-a716-446655440052', 'cc0e8400-e29b-41d4-a716-446655440055');
+
+        -- Подчасть 2.4: clinic.clinicName LIKE '%Главная%'
+        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440017', '880e8400-e29b-41d4-a716-446655440012');
+
+        INSERT INTO predicate.predicate_path_expression_attributes (path_expression_id, meta_attribute_id, attribute_order)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440017', '880e8400-e29b-41d4-a716-446655440003', 0);
+
+        INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440057', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440017');
+
+        INSERT INTO predicate.predicate_node_value (id, string_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440020', '%Главная%', 'STRING');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440058', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440020');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440059', 'EVALUATION_OPERATION', 'LIKE',
+                'cc0e8400-e29b-41d4-a716-446655440057', 'cc0e8400-e29b-41d4-a716-446655440058');
+
+        -- Подчасть 2.5: pet.bsDateTime >= '2025-11-09'
+        INSERT INTO predicate.predicate_path_expression (id, root_attribute_id)
+        VALUES ('aa0e8400-e29b-41d4-a716-446655440018', '880e8400-e29b-41d4-a716-446655440015');
+
+        INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440060', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440018');
+
+        INSERT INTO predicate.predicate_node_value (id, date_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440021', '2025-11-09 00:00:00+00', 'OFFSET_DATE_TIME');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440061', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440021');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440062', 'EVALUATION_OPERATION', 'GOE',
+                'cc0e8400-e29b-41d4-a716-446655440060', 'cc0e8400-e29b-41d4-a716-446655440061');
+
+        -- Объединение подчасти 2
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440063', 'EVALUATION_OPERATION', 'AND',
+                'cc0e8400-e29b-41d4-a716-446655440051', 'cc0e8400-e29b-41d4-a716-446655440054');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440064', 'EVALUATION_OPERATION', 'AND',
+                'cc0e8400-e29b-41d4-a716-446655440063', 'cc0e8400-e29b-41d4-a716-446655440056');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440065', 'EVALUATION_OPERATION', 'AND',
+                'cc0e8400-e29b-41d4-a716-446655440064', 'cc0e8400-e29b-41d4-a716-446655440059');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440066', 'EVALUATION_OPERATION', 'AND',
+                'cc0e8400-e29b-41d4-a716-446655440065', 'cc0e8400-e29b-41d4-a716-446655440062');
+
+        -- === ОБЪЕДИНЕНИЕ ЧАСТЕЙ 1 И 2: (часть1 OR часть2) ===
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440067', 'EVALUATION_OPERATION', 'OR',
+                'cc0e8400-e29b-41d4-a716-446655440048', 'cc0e8400-e29b-41d4-a716-446655440066');
+
+        -- === ЧАСТЬ 3: NOT (pet.rating LT 3 OR pet.nickname LIKE '%ёт%') ===
+
+        -- Подчасть 3.1: pet.rating LT 3
+        INSERT INTO predicate.predicate_node_value (id, integer_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440022', 3, 'INTEGER');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440068', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440022');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440069', 'EVALUATION_OPERATION', 'LT',
+                'cc0e8400-e29b-41d4-a716-446655440032', 'cc0e8400-e29b-41d4-a716-446655440068');
+
+        -- Подчасть 3.2: pet.nickname LIKE '%ёт%'
+        INSERT INTO predicate.predicate_node_value (id, string_value, value_type)
+        VALUES ('bb0e8400-e29b-41d4-a716-446655440023', '%ёт%', 'STRING');
+
+        INSERT INTO predicate.predicate_node (id, node_type, value_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440070', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440023');
+
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440071', 'EVALUATION_OPERATION', 'LIKE',
+                'cc0e8400-e29b-41d4-a716-446655440049', 'cc0e8400-e29b-41d4-a716-446655440070');
+
+        -- Объединение подчасти 3: (rating LT 3 OR nickname LIKE '%ёт%')
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440072', 'EVALUATION_OPERATION', 'OR',
+                'cc0e8400-e29b-41d4-a716-446655440069', 'cc0e8400-e29b-41d4-a716-446655440071');
+
+        -- NOT для подчасти 3
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440073', 'EVALUATION_OPERATION', 'NOT',
+                'cc0e8400-e29b-41d4-a716-446655440072');
+
+        -- === ФИНАЛЬНОЕ ОБЪЕДИНЕНИЕ: ((часть1 OR часть2) AND NOT(часть3)) ===
+        INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+        VALUES ('cc0e8400-e29b-41d4-a716-446655440074', 'EVALUATION_OPERATION', 'AND',
+                'cc0e8400-e29b-41d4-a716-446655440067', 'cc0e8400-e29b-41d4-a716-446655440073');
+
+        -- Обновляем корневой узел предиката
+        UPDATE predicate.predicate_definition
+        SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440074'
+        WHERE id = '990e8400-e29b-41d4-a716-446655440010';
+        </sql>
+    </changeSet>
+</databaseChangeLog>
