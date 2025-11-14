@@ -1,18 +1,14 @@
 package example.controllers;
 
 import example.models.predicate.PredicateDefinition;
-
-import example.models.predicate.QPredicateDefinition;
 import example.repo.PredicateDefinitionRepository;
 import example.service.ConsolePredicateVisualizer;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @ShellComponent
 @RequiredArgsConstructor

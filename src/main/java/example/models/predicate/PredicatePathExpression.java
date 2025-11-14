@@ -1,6 +1,5 @@
 package example.models.predicate;
 
-import example.models.meta.BasicType;
 import example.models.meta.MetaAttribute;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
