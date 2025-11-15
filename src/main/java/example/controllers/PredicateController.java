@@ -8,6 +8,7 @@ import example.models.predicate.PredicateDefinition;
 import example.repo.MetaEntityRepository;
 import example.repo.PredicateDefinitionRepository;
 import example.service.generator.PredicateGeneratorService;
+import example.service.generator.PredicateReverseGeneratorService;
 import example.service.validation.MetaEntityValidationService;
 import example.service.validation.PredicateValidationService;
 import example.service.validation.ValidationResult;
@@ -31,17 +32,9 @@ public class PredicateController {
   private final PredicateGeneratorService predicateGeneratorService;
   private final PredicateValidationService metaDataValidationService;
   private final MetaEntityValidationService metaEntityValidationService;
+  private final PredicateReverseGeneratorService predicateReverseGeneratorService;
 
-//  @SneakyThrows
-//  @GetMapping("/predicate/{id}/string")
-//  public String getPredicateAsString(@PathVariable UUID id) {
-//    PredicateDefinition predicate =
-//        predicateRepository
-//            .findById(id)
-//            .orElseThrow(() -> new RuntimeException("Predicate not found!!!"));
-//    predicateRepository.findAll();
-//    return predicateConverter.convertToString(predicate);
-//  }
+
 
   @SneakyThrows
   @GetMapping("/predicate/{id}/validate")
@@ -83,4 +76,28 @@ public class PredicateController {
 
     return fetch2;
   }
+
+
+    @SneakyThrows
+    @GetMapping("/predicate/{id}/reverse")
+    public List<?> reverse(@PathVariable UUID id) {
+        PredicateDefinition predicate =
+                predicateRepository
+                        .findById(id)
+                        .orElseThrow(() -> new RuntimeException("Predicate not found"));
+
+        String entityName = predicate.getMetaEntity().getName(); // пример: example.models.vet.Clinic
+        Class<?> aClass = Class.forName(entityName);
+        // Вместо Q-class создаем PathBuilder
+        PathBuilder<?> entity = new PathBuilder<>(aClass, "entity");
+
+        JPAQuery<?> query = new JPAQuery<>(entityManager);
+        BooleanExpression booleanExpression = predicateGeneratorService.generatePredicate(predicate);
+
+        PredicateDefinition predicateDefinition = predicateReverseGeneratorService.generateFromQueryDsl(booleanExpression, aClass);
+        BooleanExpression booleanExpression1 = predicateGeneratorService.generatePredicate(predicateDefinition);
+        List<?> fetch2 = query.select(entity).from(entity).where(booleanExpression1).fetch();
+
+        return fetch2;
+    }
 }
