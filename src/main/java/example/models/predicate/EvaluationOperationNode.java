@@ -11,20 +11,20 @@ import lombok.Setter;
 @Setter
 public class EvaluationOperationNode extends PredicateNode {
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "operator_type", nullable = false)
-    private OperatorType operatorType;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "operator_type", nullable = false)
+  private OperatorType operatorType;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "left_operand_id")
-    private PredicateNode leftOperand;
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "left_operand_id")
+  private PredicateNode leftOperand;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "right_operand_id")
-    private PredicateNode rightOperand;
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "right_operand_id")
+  private PredicateNode rightOperand;
 
-    @Override
-    public BasicType getNodeReturnType() {
-        return operatorType.getResultType();
-    }
+  @Override
+  public BasicType getNodeReturnType() {
+    return operatorType.getResultType();
+  }
 }

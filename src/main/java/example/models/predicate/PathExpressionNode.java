@@ -11,12 +11,12 @@ import lombok.Setter;
 @Setter
 public class PathExpressionNode extends PredicateNode {
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "path_expression_id")
-    private PredicatePathExpression pathExpression;
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "path_expression_id")
+  private PredicatePathExpression pathExpression;
 
-    @Override
-    public BasicType getNodeReturnType() {
-        return pathExpression.getFinalPathAttribute().getBasicType();
-    }
+  @Override
+  public BasicType getNodeReturnType() {
+    return pathExpression.getFinalPathAttribute().getBasicType();
+  }
 }

@@ -6,6 +6,7 @@
 package example.models.vet;
 
 import static com.yahoo.elide.annotation.LifeCycleHookBinding.Operation.UPDATE;
+import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.POSTCOMMIT;
 import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.PRECOMMIT;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -32,22 +33,22 @@ import org.locationtech.jts.geom.Point;
 @Entity
 @Subscription
 @Data
-@LifeCycleHookBinding(operation = UPDATE, phase = PRECOMMIT, hook = TestHook.class)
+@LifeCycleHookBinding(operation = UPDATE, phase = POSTCOMMIT, hook = TestHook.class)
 @UpdatePermission(expression = "RSMD")
 @Getter
 @Setter
 public class Clinic {
   @Id private String id = "";
 
-  @SubscriptionField
+//  @SubscriptionField
   @Column(name = "clinic_name")
   private String clinicName = "";
 
-  @SubscriptionField
+//  @SubscriptionField
   @Column(name = "is_open")
   private Boolean isOpen;
 
-  @SubscriptionField
+//  @SubscriptionField
   @OneToMany(mappedBy = "clinic")
   @JsonIgnore
   private List<Pet> pets = new ArrayList<>();

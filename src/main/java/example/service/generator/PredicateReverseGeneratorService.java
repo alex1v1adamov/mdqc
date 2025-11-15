@@ -5,6 +5,8 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import example.models.meta.*;
 import example.models.predicate.*;
 import example.repo.*;
+import example.service.validation.PredicateValidationService;
+import example.service.validation.ValidationResult;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -20,6 +22,7 @@ public class PredicateReverseGeneratorService {
   private final MetaEntityResolver metaEntityResolver;
   private final MetaAttributeResolver metaAttributeResolver;
   private final MetaEnumResolver metaEnumResolver;
+  private final PredicateValidationService validationService;
 
   public PredicateDefinition generateFromQueryDsl(Predicate predicate, MetaEntity rootEntity) {
     Objects.requireNonNull(predicate, "Predicate cannot be null");
@@ -32,6 +35,12 @@ public class PredicateReverseGeneratorService {
 
     PredicateNode rootNode = convertExpression(predicate, rootEntity);
     definition.setRootNode(rootNode);
+
+    ValidationResult validationResult = validationService.validate(definition);
+    if (!validationResult.isValid()) {
+      throw new IllegalArgumentException(
+          "Predicate validation failed: " + String.join(", ", validationResult.getErrors()));
+    }
 
     return definition;
   }
@@ -59,88 +68,98 @@ public class PredicateReverseGeneratorService {
 
     private final MetaEntity currentEntity;
 
-      @Override
-      public PredicateNode visit(Operation<?> operation, Void context) {
-          Operator operator = operation.getOperator();
-          List<? extends Expression<?>> args = operation.getArgs();
+    @Override
+    public PredicateNode visit(Operation<?> operation, Void context) {
+      Operator operator = operation.getOperator();
+      List<? extends Expression<?>> args = operation.getArgs();
 
-          // Проверяем, является ли это сравнением с DISTANCE_SPHERE
-          if (isSpatialComparison(operation)) {
-              return createSpatialComparison(operation);
-          }
-
-          return switch (operator) {
-              case Ops.AND, Ops.OR -> createLogicalOperation(operator, args);
-              case Ops.NOT -> createNotOperation(args);
-              case Ops.EQ, Ops.NE, Ops.GT, Ops.LT, Ops.GOE, Ops.LOE -> createComparisonOperation(operator, args);
-              case Ops.IS_NULL, Ops.IS_NOT_NULL -> createNullCheckOperation(operator, args);
-              case Ops.LIKE, Ops.STARTS_WITH, Ops.ENDS_WITH, Ops.STRING_CONTAINS -> createStringOperation(operator, args);
-              case Ops.IN, Ops.NOT_IN -> createInOperation(operator, args);
-              default -> throw new UnsupportedOperationException("Operator not supported: " + operator);
-          };
+      // Проверяем, является ли это сравнением с DISTANCE_SPHERE
+      if (isSpatialComparison(operation)) {
+        return createSpatialComparison(operation);
       }
 
-      private boolean isSpatialComparison(Operation<?> operation) {
-          List<? extends Expression<?>> args = operation.getArgs();
-          if (args.size() != 2) return false;
+      return switch (operator) {
+        case Ops.AND, Ops.OR -> createLogicalOperation(operator, args);
+        case Ops.NOT -> createNotOperation(args);
+        case Ops.EQ, Ops.NE, Ops.GT, Ops.LT, Ops.GOE, Ops.LOE ->
+            createComparisonOperation(operator, args);
+        case Ops.IS_NULL, Ops.IS_NOT_NULL -> createNullCheckOperation(operator, args);
+        case Ops.LIKE, Ops.STARTS_WITH, Ops.ENDS_WITH, Ops.STRING_CONTAINS ->
+            createStringOperation(operator, args);
+        case Ops.IN, Ops.NOT_IN -> createInOperation(operator, args);
+        default -> throw new UnsupportedOperationException("Operator not supported: " + operator);
+      };
+    }
 
-          // Проверяем, содержит ли один из аргументов пространственную функцию
-          return args.stream().anyMatch(this::isSpatialExpression);
+    private boolean isSpatialComparison(Operation<?> operation) {
+      List<? extends Expression<?>> args = operation.getArgs();
+      if (args.size() != 2) return false;
+
+      // Проверяем, содержит ли один из аргументов пространственную функцию
+      return args.stream().anyMatch(this::isSpatialExpression);
+    }
+
+    private boolean isSpatialExpression(Expression<?> expr) {
+      if (expr instanceof TemplateExpression) {
+        String template = ((TemplateExpression<?>) expr).getTemplate().toString();
+        return template.contains("ST_DistanceSphere")
+            || template.contains("ST_Within")
+            || template.contains("ST_Intersects")
+            || template.contains("ST_DWithin");
+      }
+      return false;
+    }
+
+    private PredicateNode createSpatialComparison(Operation<?> operation) {
+      List<?> rawArgs = operation.getArgs();
+      Operator operator = operation.getOperator();
+
+      // Преобразуем к List<Expression<?>>
+      List<Expression<?>> args =
+          rawArgs.stream()
+              .filter(arg -> arg instanceof Expression)
+              .map(arg -> (Expression<?>) arg)
+              .collect(Collectors.toList());
+
+      if (args.size() != 2) {
+        throw new IllegalArgumentException("Spatial comparison requires exactly 2 arguments");
       }
 
-      private boolean isSpatialExpression(Expression<?> expr) {
-          if (expr instanceof TemplateExpression) {
-              String template = ((TemplateExpression<?>) expr).getTemplate().toString();
-              return template.contains("ST_DistanceSphere") ||
-                      template.contains("ST_Within") ||
-                      template.contains("ST_Intersects") ||
-                      template.contains("ST_DWithin");
-          }
-          return false;
+      // Находим пространственное выражение и значение для сравнения
+      Expression<?> spatialExpr =
+          args.stream()
+              .filter(this::isSpatialExpression)
+              .findFirst()
+              .orElseThrow(() -> new IllegalArgumentException("No spatial expression found"));
+
+      Expression<?> comparisonValue =
+          args.stream()
+              .filter(arg -> !isSpatialExpression(arg))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new IllegalArgumentException(
+                          "No comparison value found for spatial operation"));
+
+      // Конвертируем пространственное выражение
+      PredicateNode spatialNode = convertExpression(spatialExpr, currentEntity);
+
+      // Если spatialNode - это DISTANCE_SPHERE, создаем сравнение
+      if (spatialNode instanceof EvaluationOperationNode evalNode
+          && evalNode.getOperatorType() == OperatorType.DISTANCE_SPHERE) {
+
+        // Создаем сравнение (например, DISTANCE_SPHERE < 1000)
+        EvaluationOperationNode comparisonNode =
+            createEvaluationOperationNode(convertComparisonOperator(operator));
+        comparisonNode.setLeftOperand(spatialNode);
+        comparisonNode.setRightOperand(convertExpression(comparisonValue, currentEntity));
+
+        return comparisonNode;
       }
 
-      private PredicateNode createSpatialComparison(Operation<?> operation) {
-          List<?> rawArgs = operation.getArgs();
-          Operator operator = operation.getOperator();
-
-          // Преобразуем к List<Expression<?>>
-          List<Expression<?>> args = rawArgs.stream()
-                  .filter(arg -> arg instanceof Expression)
-                  .map(arg -> (Expression<?>) arg)
-                  .collect(Collectors.toList());
-
-          if (args.size() != 2) {
-              throw new IllegalArgumentException("Spatial comparison requires exactly 2 arguments");
-          }
-
-          // Находим пространственное выражение и значение для сравнения
-          Expression<?> spatialExpr = args.stream()
-                  .filter(this::isSpatialExpression)
-                  .findFirst()
-                  .orElseThrow(() -> new IllegalArgumentException("No spatial expression found"));
-
-          Expression<?> comparisonValue = args.stream()
-                  .filter(arg -> !isSpatialExpression(arg))
-                  .findFirst()
-                  .orElseThrow(() -> new IllegalArgumentException("No comparison value found for spatial operation"));
-
-          // Конвертируем пространственное выражение
-          PredicateNode spatialNode = convertExpression(spatialExpr, currentEntity);
-
-          // Если spatialNode - это DISTANCE_SPHERE, создаем сравнение
-          if (spatialNode instanceof EvaluationOperationNode evalNode &&
-                  evalNode.getOperatorType() == OperatorType.DISTANCE_SPHERE) {
-
-              // Создаем сравнение (например, DISTANCE_SPHERE < 1000)
-              EvaluationOperationNode comparisonNode = createEvaluationOperationNode(convertComparisonOperator(operator));
-              comparisonNode.setLeftOperand(spatialNode);
-              comparisonNode.setRightOperand(convertExpression(comparisonValue, currentEntity));
-
-              return comparisonNode;
-          }
-
-          throw new UnsupportedOperationException("Complex spatial comparison not supported: " + operation);
-      }
+      throw new UnsupportedOperationException(
+          "Complex spatial comparison not supported: " + operation);
+    }
 
     @Override
     public PredicateNode visit(Path<?> path, Void context) {
@@ -167,52 +186,54 @@ public class PredicateReverseGeneratorService {
       throw new UnsupportedOperationException("SubQueryExpression not supported: " + expr);
     }
 
-      @Override
-      public PredicateNode visit(TemplateExpression<?> expr, Void context) {
-          String template = expr.getTemplate().toString();
+    @Override
+    public PredicateNode visit(TemplateExpression<?> expr, Void context) {
+      String template = expr.getTemplate().toString();
 
-          // Обработка DISTANCE_SPHERE из SpatialTemplateHelper
-          if (template.contains("ST_DistanceSphere")) {
-              return createDistanceSphereOperation(expr);
-          }
-
-          // Обработка других пространственных функций
-          if (template.contains("ST_Within")) {
-              return createSpatialOperation(expr, "WITHIN");
-          }
-
-          if (template.contains("ST_Intersects")) {
-              return createSpatialOperation(expr, "INTERSECTS");
-          }
-
-          if (template.contains("ST_DWithin")) {
-              return createSpatialOperation(expr, "DWITHIN");
-          }
-
-          throw new UnsupportedOperationException("TemplateExpression not supported: " + expr);
+      // Обработка DISTANCE_SPHERE из SpatialTemplateHelper
+      if (template.contains("ST_DistanceSphere")) {
+        return createDistanceSphereOperation(expr);
       }
 
-      private PredicateNode createDistanceSphereOperation(TemplateExpression<?> expr) {
-          // Явное приведение типа для args
-          @SuppressWarnings("unchecked")
-          List<Expression<?>> args = (List<Expression<?>>) (List<?>) expr.getArgs();
-
-          if (args.size() != 2) {
-              throw new IllegalArgumentException("DISTANCE_SPHERE requires exactly 2 arguments");
-          }
-
-          // Создаем узел для DISTANCE_SPHERE операции
-          EvaluationOperationNode operationNode = createEvaluationOperationNode(OperatorType.DISTANCE_SPHERE);
-          operationNode.setLeftOperand(convertExpression(args.get(0), currentEntity));
-          operationNode.setRightOperand(convertExpression(args.get(1), currentEntity));
-
-          return operationNode;
+      // Обработка других пространственных функций
+      if (template.contains("ST_Within")) {
+        return createSpatialOperation(expr, "WITHIN");
       }
 
-      private PredicateNode createSpatialOperation(TemplateExpression<?> expr, String operationType) {
-          // Для простоты пока выбросим исключение, но можно добавить поддержку
-          throw new UnsupportedOperationException("Spatial operation " + operationType + " not yet supported: " + expr);
+      if (template.contains("ST_Intersects")) {
+        return createSpatialOperation(expr, "INTERSECTS");
       }
+
+      if (template.contains("ST_DWithin")) {
+        return createSpatialOperation(expr, "DWITHIN");
+      }
+
+      throw new UnsupportedOperationException("TemplateExpression not supported: " + expr);
+    }
+
+    private PredicateNode createDistanceSphereOperation(TemplateExpression<?> expr) {
+      // Явное приведение типа для args
+      @SuppressWarnings("unchecked")
+      List<Expression<?>> args = (List<Expression<?>>) (List<?>) expr.getArgs();
+
+      if (args.size() != 2) {
+        throw new IllegalArgumentException("DISTANCE_SPHERE requires exactly 2 arguments");
+      }
+
+      // Создаем узел для DISTANCE_SPHERE операции
+      EvaluationOperationNode operationNode =
+          createEvaluationOperationNode(OperatorType.DISTANCE_SPHERE);
+      operationNode.setLeftOperand(convertExpression(args.get(0), currentEntity));
+      operationNode.setRightOperand(convertExpression(args.get(1), currentEntity));
+
+      return operationNode;
+    }
+
+    private PredicateNode createSpatialOperation(TemplateExpression<?> expr, String operationType) {
+      // Для простоты пока выбросим исключение, но можно добавить поддержку
+      throw new UnsupportedOperationException(
+          "Spatial operation " + operationType + " not yet supported: " + expr);
+    }
 
     private PredicateNode createLogicalOperation(
         Operator operator, List<? extends Expression<?>> args) {
@@ -431,20 +452,20 @@ public class PredicateReverseGeneratorService {
   /** Вспомогательный класс для разрешения BasicType из значений */
   private static class BasicTypeResolver {
 
-      static BasicType resolveFromValue(Object value) {
-          if (value == null) return BasicType.STRING;
+    static BasicType resolveFromValue(Object value) {
+      if (value == null) return BasicType.STRING;
 
-          return switch (value.getClass().getSimpleName()) {
-              case "String" -> BasicType.STRING;
-              case "Boolean", "boolean" -> BasicType.BOOLEAN;
-              case "Integer", "int", "Long", "long" -> BasicType.INTEGER;
-              case "Double", "double", "Float", "float" -> BasicType.DOUBLE;
-              case "OffsetDateTime" -> BasicType.OFFSET_DATE_TIME;
-              case "Point" -> BasicType.POINT;
-              case "NumberTemplate" -> BasicType.DOUBLE; // Для результатов DISTANCE_SPHERE
-              default -> value instanceof Enum ? BasicType.ENUM : BasicType.STRING;
-          };
-      }
+      return switch (value.getClass().getSimpleName()) {
+        case "String" -> BasicType.STRING;
+        case "Boolean", "boolean" -> BasicType.BOOLEAN;
+        case "Integer", "int", "Long", "long" -> BasicType.INTEGER;
+        case "Double", "double", "Float", "float" -> BasicType.DOUBLE;
+        case "OffsetDateTime" -> BasicType.OFFSET_DATE_TIME;
+        case "Point" -> BasicType.POINT;
+        case "NumberTemplate" -> BasicType.DOUBLE; // Для результатов DISTANCE_SPHERE
+        default -> value instanceof Enum ? BasicType.ENUM : BasicType.STRING;
+      };
+    }
 
     static void setValueByType(
         PredicateNodeValue nodeValue,

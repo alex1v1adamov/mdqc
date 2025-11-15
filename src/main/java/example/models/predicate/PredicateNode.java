@@ -22,9 +22,9 @@ public abstract class PredicateNode {
   @Column(name = "id", updatable = false, nullable = false)
   private UUID id;
 
-//  @Enumerated(EnumType.STRING)
-//  @Column(name = "node_type", nullable = false, insertable = false, updatable = false)
-//  private NodeType nodeType;
+  //  @Enumerated(EnumType.STRING)
+  //  @Column(name = "node_type", nullable = false, insertable = false, updatable = false)
+  //  private NodeType nodeType;
 
   public abstract BasicType getNodeReturnType();
 }

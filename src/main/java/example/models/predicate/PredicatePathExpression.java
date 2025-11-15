@@ -34,8 +34,7 @@ public class PredicatePathExpression {
   private UUID id;
 
   /**
-   * Конечный атрибут (конец пути) ПРАВИЛА: Обязательное поле;
-   * attributeCategory должен быть типа
+   * Конечный атрибут (конец пути) ПРАВИЛА: Обязательное поле; attributeCategory должен быть типа
    * BASIC;
    */
   @ManyToOne(fetch = FetchType.LAZY)
@@ -44,8 +43,8 @@ public class PredicatePathExpression {
 
   /**
    * Цепочка атрибутов для навигации ПРАВИЛА: Может быть пустым (путь из одного сегмента); Все
-   * атрибуты должны иметь category = ENTITY;
-   * Порядок определяет последовательность навигации; Все атрибуты должны быть совместимы по типам
+   * атрибуты должны иметь category = ENTITY; Порядок определяет последовательность навигации; Все
+   * атрибуты должны быть совместимы по типам
    */
   @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
   @JoinTable(
@@ -55,6 +54,4 @@ public class PredicatePathExpression {
       inverseJoinColumns = @JoinColumn(name = "meta_attribute_id"))
   @OrderColumn(name = "attribute_order")
   private List<MetaAttribute> pathAttributes = new ArrayList<>();
-
-
 }
