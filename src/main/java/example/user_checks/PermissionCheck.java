@@ -52,7 +52,7 @@ public class PermissionCheck extends OperationCheck<Object> {
       final UserRole userRole,
       final Object attributeName) {
     if (thisEntityPermissions.isEmpty()) {
-      return true;
+      return false;
     }
     Stream<Permission> thisAttributePermissions =
         thisEntityPermissions.filter(
