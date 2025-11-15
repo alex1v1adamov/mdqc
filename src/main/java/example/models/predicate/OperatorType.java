@@ -35,8 +35,8 @@ public enum OperatorType {
   CONTAINS(BasicTypeCategory.TEXT, BasicTypeCategory.TEXT),
 
   // Операторы множеств
-  IN(BasicTypeCategory.COMPARABLE, BasicTypeCategory.TEXT),
-  NOT_IN(BasicTypeCategory.COMPARABLE, BasicTypeCategory.TEXT),
+  IN(BasicTypeCategory.COMPARABLE, BasicTypeCategory.COMPARABLE),
+  NOT_IN(BasicTypeCategory.COMPARABLE, BasicTypeCategory.COMPARABLE),
 
   // Географические операторы
   DISTANCE_SPHERE(
