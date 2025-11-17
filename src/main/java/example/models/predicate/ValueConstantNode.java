@@ -1,11 +1,13 @@
 package example.models.predicate;
 
+import com.yahoo.elide.annotation.Include;
 import example.models.meta.BasicType;
 import jakarta.persistence.*;
 import java.util.*;
 import lombok.Getter;
 import lombok.Setter;
 
+@Include(rootLevel = false)
 @Entity
 @DiscriminatorValue("VALUE_CONSTANT")
 @Getter

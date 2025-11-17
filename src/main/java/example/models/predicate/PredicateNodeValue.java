@@ -1,5 +1,6 @@
 package example.models.predicate;
 
+import com.yahoo.elide.annotation.Include;
 import example.models.meta.BasicType;
 import example.models.meta.MetaEnumValue;
 import jakarta.persistence.CascadeType;
@@ -22,6 +23,7 @@ import org.locationtech.jts.geom.Point;
 
 /* Универсальное хранилище значений для предикатов
  */
+@Include(rootLevel = false)
 @Entity
 @Table(name = "predicate_node_value", schema = "predicate")
 @Getter

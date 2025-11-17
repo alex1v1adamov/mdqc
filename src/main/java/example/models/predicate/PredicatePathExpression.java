@@ -1,5 +1,6 @@
 package example.models.predicate;
 
+import com.yahoo.elide.annotation.Include;
 import example.models.meta.MetaAttribute;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -22,6 +23,7 @@ import lombok.Setter;
 
 /* Выражение пути для навигации по связям между сущностями
  */
+@Include(rootLevel = false)
 @Entity
 @Table(name = "predicate_path_expression", schema = "predicate")
 @Getter

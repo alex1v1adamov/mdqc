@@ -1,10 +1,12 @@
 package example.models.predicate;
 
+import com.yahoo.elide.annotation.Include;
 import example.models.meta.BasicType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+@Include(rootLevel = false)
 @Entity
 @DiscriminatorValue("PATH_EXPRESSION")
 @Getter

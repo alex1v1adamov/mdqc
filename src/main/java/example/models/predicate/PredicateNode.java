@@ -1,5 +1,6 @@
 package example.models.predicate;
 
+import com.yahoo.elide.annotation.Include;
 import example.models.meta.BasicType;
 import jakarta.persistence.*;
 import java.util.UUID;
@@ -9,6 +10,7 @@ import lombok.Setter;
 /*
  * Узел дерева предиката
  */
+@Include(rootLevel = false)
 @Entity
 @Table(name = "predicate_node", schema = "predicate")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)

@@ -492,6 +492,9 @@
             VALUES ('990e8400-e29b-41d4-a716-446655440010', 'AdvancedComplexPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
+-- (pet.nickname LIKE 'Л%' AND loudRadius > 2.5 AND loudRadius LT 6.0 AND clinicName LIKE '%Главная%' AND bsDateTime >= '2025-11-09')
+-- AND
+-- (pet.rating >= 4 AND pet.petType IN ('CAT', 'DOG') AND pet.clinic.isOpen = true AND расстояние LT 100)
             -- === ЧАСТЬ 1: (pet.rating >= 4 AND pet.petType IN ('CAT', 'DOG') AND pet.clinic.isOpen = true AND расстояние LT 100) ===
 
             -- Подчасть 1.1: pet.rating >= 4

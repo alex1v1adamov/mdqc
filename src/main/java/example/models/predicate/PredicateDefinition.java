@@ -1,5 +1,6 @@
 package example.models.predicate;
 
+import com.yahoo.elide.annotation.Include;
 import example.models.meta.MetaEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -17,6 +18,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 /** Определение предиката - корневая сущность */
+@Include
 @Entity
 @Table(name = "predicate_definition", schema = "predicate")
 @Getter
