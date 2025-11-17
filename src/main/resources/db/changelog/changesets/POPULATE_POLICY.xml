@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.9.xsd">
+
+
+    <changeSet id="populate-policy" author="system">
+        <comment>Populate policy.permission</comment>
+        <sql>
+            INSERT INTO policy.permission
+                (id, entity_id, attribute_id, predicate_id)
+            VALUES ('fc7b4489-b473-46c5-8452-9aaf801806fc',
+                    '550e8400-e29b-41d4-a716-446655440002', '880e8400-e29b-41d4-a716-446655440012',
+                    '11111111-1111-1111-1111-111111111111');
+            INSERT INTO policy.permission_user_roles (permission_id, user_role)
+            VALUES ('fc7b4489-b473-46c5-8452-9aaf801806fc', 'ADMIN');
+
+        </sql>
+    </changeSet>
+</databaseChangeLog>

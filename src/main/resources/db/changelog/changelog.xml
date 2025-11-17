@@ -5,9 +5,8 @@
 
     <include file="db/changelog/changesets/initial.xml"/>
     <include file="/db/changelog/changesets/DDL.xml"/>
-    <include file="/db/changelog/changesets/POPULATE.xml"/>
-    <include file="/db/changelog/changesets/POPULATE2.xml"/>
-
-
+    <include file="/db/changelog/changesets/POPULATE META + PREDICATE.xml"/>
+    <include file="/db/changelog/changesets/POPULATE VET.xml"/>
+    <include file="/db/changelog/changesets/POPULATE_POLICY.xml"/>
 
 </databaseChangeLog>
