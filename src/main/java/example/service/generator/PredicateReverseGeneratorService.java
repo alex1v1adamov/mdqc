@@ -12,6 +12,8 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 
@@ -462,6 +464,8 @@ public class PredicateReverseGeneratorService {
         case "Double", "double", "Float", "float" -> BasicType.DOUBLE;
         case "OffsetDateTime" -> BasicType.OFFSET_DATE_TIME;
         case "Point" -> BasicType.POINT;
+        case "LineString" -> BasicType.LINE_STRING;
+        case "MultiPolygon" -> BasicType.MULTI_POLYGON;
         case "NumberTemplate" -> BasicType.DOUBLE; // Для результатов DISTANCE_SPHERE
         default -> value instanceof Enum ? BasicType.ENUM : BasicType.STRING;
       };
@@ -481,6 +485,8 @@ public class PredicateReverseGeneratorService {
         case DOUBLE -> nodeValue.setDoubleValue(((Number) value).doubleValue());
         case OFFSET_DATE_TIME -> nodeValue.setOffsetDateTimeValue((OffsetDateTime) value);
         case POINT -> nodeValue.setPointValue((Point) value);
+        case LINE_STRING -> nodeValue.setLineStringValue((LineString) value);
+        case MULTI_POLYGON -> nodeValue.setMultiPolygonValue((MultiPolygon) value);
         case ENUM -> {
           MetaEnumValue enumValue = enumResolver.resolveEnumValue((Enum<?>) value);
           nodeValue.setEnumValue(enumValue);

@@ -10,7 +10,7 @@ public enum BasicTypeCategory {
   LOGICAL(BasicType.BOOLEAN),
   NUMERIC(BasicType.INTEGER, BasicType.DOUBLE),
   TEMPORAL(BasicType.OFFSET_DATE_TIME),
-  SPATIAL(BasicType.POINT),
+  SPATIAL(BasicType.POINT, BasicType.LINE_STRING, BasicType.MULTI_POLYGON),
   ENUMERATION(BasicType.ENUM),
 
   // Комбинированные категории

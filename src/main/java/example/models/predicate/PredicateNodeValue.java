@@ -19,6 +19,9 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
 
 /* Универсальное хранилище значений для предикатов
@@ -28,6 +31,7 @@ import org.locationtech.jts.geom.Point;
 @Table(name = "predicate_node_value", schema = "predicate")
 @Getter
 @Setter
+@FieldNameConstants
 public class PredicateNodeValue {
 
   @Id
@@ -64,6 +68,12 @@ public class PredicateNodeValue {
 
   @Column(name = "point_value")
   private Point pointValue;
+
+  @Column(name = "line_string_value")
+  private LineString lineStringValue;
+
+  @Column(name = "multi_polygon_value")
+  private MultiPolygon multiPolygonValue;
 
   /**
    * Значение перечисления ПРАВИЛА: - Используется ТОЛЬКО когда valueType = ENUM -
@@ -106,6 +116,8 @@ public class PredicateNodeValue {
       case OFFSET_DATE_TIME -> this.offsetDateTimeValue = (OffsetDateTime) value;
       case ENUM -> this.enumValue = (MetaEnumValue) value;
       case POINT -> this.pointValue = (Point) value;
+      case LINE_STRING -> lineStringValue = (LineString) value;
+      case MULTI_POLYGON -> multiPolygonValue = (MultiPolygon) value;
     }
   }
 
@@ -120,6 +132,8 @@ public class PredicateNodeValue {
       case ENUM -> enumValue;
       case DOUBLE -> doubleValue;
       case POINT -> pointValue;
+      case LINE_STRING -> lineStringValue;
+      case MULTI_POLYGON -> multiPolygonValue;
     };
   }
 }

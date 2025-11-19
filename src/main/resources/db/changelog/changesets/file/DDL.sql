@@ -6,7 +6,7 @@ create type meta.attribute_category as enum ('BASIC', 'ENTITY');
 
 alter type meta.attribute_category owner to postgres;
 
-create type meta.basic_type as enum ('STRING', 'BOOLEAN', 'INTEGER', 'LONG', 'OFFSET_DATE_TIME', 'TIMESTAMP', 'ENUM', 'DOUBLE', 'POINT');
+create type meta.basic_type as enum ('STRING', 'BOOLEAN', 'INTEGER', 'LONG', 'OFFSET_DATE_TIME', 'TIMESTAMP', 'ENUM', 'DOUBLE', 'POINT', 'LINE_STRING', 'MULTI_POLYGON');
 
 alter type meta.basic_type owner to postgres;
 
@@ -20,10 +20,10 @@ alter type predicate.operator_type owner to postgres;
 
 create table vet.clinic
 (
-    is_open boolean,
+    is_open     boolean,
     id          varchar(255) not null
         primary key,
-    clinic_name   varchar(255),
+    clinic_name varchar(255),
     geometry    geometry
 );
 
@@ -32,22 +32,24 @@ alter table vet.clinic
 
 create table vet.pet
 (
-    id              varchar(255) not null
+    id        varchar(255) not null
         primary key,
-    nickname     varchar(255),
-    clinic_id         varchar(255)
+    nickname  varchar(255),
+    clinic_id varchar(255)
         constraint fklqswy7od0wada8ep1ra6jqt20
             references vet.clinic,
-    status          varchar(255)
+    status    varchar(255)
         constraint pet_type_check
             check ((status)::text = ANY
-        ((ARRAY ['CAT'::character varying, 'DOG'::character varying, 'BIRD'::character varying])::text[])),
-    bs_date_time    timestamp with time zone,
-    rating          integer,
-    loud_radius double precision
+        ((ARRAY ['CAT':: character varying, 'DOG':: character varying, 'BIRD':: character varying])::text[])
+) ,
+    bs_date_time timestamp with time zone,
+    rating       integer,
+    loud_radius  double precision
 );
 
-comment on column vet.pet.rating is 'Рейтинг питомца (целое число)';
+comment
+on column vet.pet.rating is 'Рейтинг питомца (целое число)';
 
 alter table vet.pet
     owner to postgres;
@@ -62,7 +64,8 @@ create table meta.meta_entity
     name varchar                        not null
 );
 
-comment on table meta.meta_entity is 'Мета-описание бизнес-сущностей';
+comment
+on table meta.meta_entity is 'Мета-описание бизнес-сущностей';
 
 alter table meta.meta_entity
     owner to postgres;
@@ -77,7 +80,8 @@ create table meta.meta_enum
     class_name  varchar(500)
 );
 
-comment on table meta.meta_enum is 'Мета-описание перечислений (enum)';
+comment
+on table meta.meta_enum is 'Мета-описание перечислений (enum)';
 
 alter table meta.meta_enum
     owner to postgres;
@@ -119,7 +123,8 @@ create table meta.meta_attribute
         check ((type <> 'PLURAL'::meta.attribute_type) OR (attribute_category = 'ENTITY'::meta.attribute_category))
 );
 
-comment on table meta.meta_attribute is 'Мета-описание атрибутов бизнес-сущностей';
+comment
+on table meta.meta_attribute is 'Мета-описание атрибутов бизнес-сущностей';
 
 alter table meta.meta_attribute
     owner to postgres;
@@ -154,7 +159,8 @@ create table meta.meta_enum_value
         unique (meta_enum_id, storage_value)
 );
 
-comment on table meta.meta_enum_value is 'Значения перечислений';
+comment
+on table meta.meta_enum_value is 'Значения перечислений';
 
 alter table meta.meta_enum_value
     owner to postgres;
@@ -167,19 +173,20 @@ create index idx_enum_value_order
 
 create table predicate.predicate_path_expression
 (
-    id                  uuid default gen_random_uuid() not null
+    id                   uuid default gen_random_uuid() not null
         primary key,
-    final_path_attribute   uuid                           not null
+    final_path_attribute uuid                           not null
         constraint fk_path_root_attribute
             references meta.meta_attribute
             on delete cascade,
-    target_attribute_id uuid
+    target_attribute_id  uuid
         constraint fk_path_target_attribute
             references meta.meta_attribute
             on delete set null
 );
 
-comment on table predicate.predicate_path_expression is 'Выражение пути для навигации по связям между сущностями';
+comment
+on table predicate.predicate_path_expression is 'Выражение пути для навигации по связям между сущностями';
 
 alter table predicate.predicate_path_expression
     owner to postgres;
@@ -204,7 +211,8 @@ create table predicate.predicate_path_expression_attributes
     primary key (path_expression_id, meta_attribute_id)
 );
 
-comment on table predicate.predicate_path_expression_attributes is 'Связующая таблиция для атрибутов пути';
+comment
+on table predicate.predicate_path_expression_attributes is 'Связующая таблиция для атрибутов пути';
 
 alter table predicate.predicate_path_expression_attributes
     owner to postgres;
@@ -234,7 +242,8 @@ create table predicate.predicate_node
             on delete cascade
 );
 
-comment on table predicate.predicate_node is 'Для geometry атрибутов с operator_type LT/GT - это DISTANCE_SPHERE операции';
+comment
+on table predicate.predicate_node is 'Для geometry атрибутов с operator_type LT/GT - это DISTANCE_SPHERE операции';
 
 alter table predicate.predicate_node
     owner to postgres;
@@ -251,27 +260,29 @@ create index idx_predicate_node_left
 create index idx_predicate_node_right
     on predicate.predicate_node (right_operand_id);
 
-create table predicate.predicate_node_value
+CREATE TABLE predicate.predicate_node_value
 (
-    id                uuid default gen_random_uuid() not null
+    id                  uuid default gen_random_uuid() not null
         primary key,
-    string_value      varchar(1000),
-    boolean_value     boolean,
-    integer_value     integer,
-    long_value        bigint,
-    date_value        timestamp with time zone,
-    timestamp_value   timestamp,
-    enum_value_id     uuid
+    string_value        varchar(1000),
+    boolean_value       boolean,
+    integer_value       integer,
+    long_value          bigint,
+    date_value          timestamp with time zone,
+    timestamp_value     timestamp,
+    enum_value_id       uuid
         constraint fk_enum_value_id
             references meta.meta_enum_value
             on delete set null,
-    value_type        meta.basic_type                not null,
-    predicate_node_id uuid
+    value_type          meta.basic_type                not null,
+    predicate_node_id   uuid
         constraint fk_node_value_node
             references predicate.predicate_node
             on delete set null,
-    double_value      double precision,
-    point_value       geometry(Point, 4326),
+    double_value        double precision,
+    point_value         geometry(Point, 4326),
+    line_string_value   geometry(LineString, 4326),
+    multi_polygon_value geometry(MultiPolygon, 4326),
     constraint chk_value_type_string
         check ((value_type <> 'STRING'::meta.basic_type) OR (string_value IS NOT NULL)),
     constraint chk_value_type_boolean
@@ -288,19 +299,33 @@ create table predicate.predicate_node_value
         check ((value_type <> 'ENUM'::meta.basic_type) OR (enum_value_id IS NOT NULL)),
     constraint chk_value_type_double
         check ((value_type <> 'DOUBLE'::meta.basic_type) OR (double_value IS NOT NULL)),
-    constraint chk_single_value
-        check (((((((((((string_value IS NOT NULL))::integer + ((boolean_value IS NOT NULL))::integer) +
-                      ((integer_value IS NOT NULL))::integer) + ((long_value IS NOT NULL))::integer) +
-                    ((date_value IS NOT NULL))::integer) + ((timestamp_value IS NOT NULL))::integer) +
-                  ((double_value IS NOT NULL))::integer) + ((point_value IS NOT NULL))::integer) +
-                ((enum_value_id IS NOT NULL))::integer) = 1),
     constraint chk_value_type_point
-        check ((value_type <> 'POINT'::meta.basic_type) OR (point_value IS NOT NULL))
+        check ((value_type <> 'POINT'::meta.basic_type) OR (point_value IS NOT NULL)),
+    constraint chk_value_type_line_string
+        check ((value_type <> 'LINE_STRING'::meta.basic_type) OR (line_string_value IS NOT NULL)),
+    constraint chk_value_type_multi_polygon
+        check ((value_type <> 'MULTI_POLYGON'::meta.basic_type) OR (multi_polygon_value IS NOT NULL)),
+    constraint chk_single_value
+        check ((
+                   (CASE WHEN string_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN boolean_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN integer_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN long_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN date_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN timestamp_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN double_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN point_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN line_string_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN multi_polygon_value IS NOT NULL THEN 1 ELSE 0 END) +
+                   (CASE WHEN enum_value_id IS NOT NULL THEN 1 ELSE 0 END)
+                   ) = 1)
 );
 
-comment on table predicate.predicate_node_value is 'Универсальное хранилище значений для предикатов';
+comment
+on table predicate.predicate_node_value is 'Универсальное хранилище значений для предикатов';
 
-comment on column predicate.predicate_node_value.double_value is 'Значение типа DOUBLE для предикатов';
+comment
+on column predicate.predicate_node_value.double_value is 'Значение типа DOUBLE для предикатов';
 
 alter table predicate.predicate_node_value
     owner to postgres;
@@ -329,7 +354,8 @@ create table predicate.predicate_node_in_values
     primary key (predicate_node_id, node_value_id)
 );
 
-comment on table predicate.predicate_node_in_values is 'Таблица для хранения множественных значений оператора IN';
+comment
+on table predicate.predicate_node_in_values is 'Таблица для хранения множественных значений оператора IN';
 
 alter table predicate.predicate_node_in_values
     owner to postgres;
@@ -355,7 +381,8 @@ create table predicate.predicate_definition
             on delete set null
 );
 
-comment on table predicate.predicate_definition is 'Определение предиката - корневая сущность';
+comment
+on table predicate.predicate_definition is 'Определение предиката - корневая сущность';
 
 alter table predicate.predicate_definition
     owner to postgres;
@@ -409,7 +436,11 @@ create index idx_permission_user_roles_permission_id
     on policy.permission_user_roles (permission_id);
 
 -- Убираем поле meta_attribute_id из predicate_node
-ALTER TABLE predicate.predicate_node DROP COLUMN meta_attribute_id;
+ALTER TABLE predicate.predicate_node
+DROP
+COLUMN meta_attribute_id;
 
 -- Убираем поле target_attribute_id из predicate_path_expression
-ALTER TABLE predicate.predicate_path_expression DROP COLUMN target_attribute_id;
+ALTER TABLE predicate.predicate_path_expression
+DROP
+COLUMN target_attribute_id;

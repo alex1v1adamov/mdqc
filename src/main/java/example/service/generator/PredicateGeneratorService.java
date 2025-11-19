@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.hibernate.Hibernate;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
@@ -70,7 +72,7 @@ class ExpressionResolver {
     return switch (unproxiedNode) {
       case EvaluationOperationNode evalNode -> buildEvaluationExpression(evalNode, entityPath);
       case PathExpressionNode pathNode -> buildPathExpression(pathNode, entityPath);
-      case ValueConstantNode valueNode ->
+      case ValueConstantNode ignored ->
           throw new IllegalArgumentException(
               "VALUE_CONSTANT cannot be used as standalone predicate");
       default ->
@@ -308,6 +310,8 @@ class ConstantBuilder {
       case DOUBLE -> Expressions.constant(value.getDoubleValue());
       case OFFSET_DATE_TIME -> Expressions.constant(value.getOffsetDateTimeValue());
       case POINT -> Expressions.constant(value.getPointValue());
+      case LINE_STRING -> Expressions.constant(value.getLineStringValue());
+      case MULTI_POLYGON -> Expressions.constant(value.getMultiPolygonValue());
       case ENUM -> buildEnumConstant(value);
       default ->
           throw new IllegalArgumentException("Unsupported value type: " + value.getValueType());
@@ -381,6 +385,8 @@ class ExpressionBuilder {
       case OFFSET_DATE_TIME -> Expressions.dateTimePath(OffsetDateTime.class, fullPath);
       case ENUM -> Expressions.stringPath(fullPath);
       case POINT -> Expressions.comparablePath(Point.class, fullPath);
+      case LINE_STRING -> Expressions.comparablePath(LineString.class, fullPath);
+      case MULTI_POLYGON -> Expressions.comparablePath(MultiPolygon.class, fullPath);
       default ->
           throw new IllegalArgumentException("Unsupported basic type: " + attribute.getBasicType());
     };

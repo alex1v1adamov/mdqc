@@ -7,5 +7,7 @@ public enum BasicType {
   OFFSET_DATE_TIME,
   ENUM,
   DOUBLE,
-  POINT
+  POINT,
+  LINE_STRING,
+  MULTI_POLYGON
 }

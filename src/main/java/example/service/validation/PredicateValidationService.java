@@ -269,12 +269,16 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
   private void validateValueTypeConsistency(PredicateNodeValue value, List<String> errors) {
     // Проверяем, что заполнено только одно поле в соответствии с valueType
     switch (value.getValueType()) {
-      case STRING -> validateOnlyOneFieldSet(value, "stringValue", errors);
-      case BOOLEAN -> validateOnlyOneFieldSet(value, "booleanValue", errors);
-      case INTEGER -> validateOnlyOneFieldSet(value, "integerValue", errors);
-      case DOUBLE -> validateOnlyOneFieldSet(value, "doubleValue", errors);
-      case OFFSET_DATE_TIME -> validateOnlyOneFieldSet(value, "offsetDateTimeValue", errors);
-      case POINT -> validateOnlyOneFieldSet(value, "pointValue", errors);
+      case STRING -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.stringValue, errors);
+      case BOOLEAN -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.booleanValue, errors);
+      case INTEGER -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.integerValue, errors);
+      case DOUBLE -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.doubleValue, errors);
+      case OFFSET_DATE_TIME -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.offsetDateTimeValue, errors);
+      case POINT -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.pointValue, errors);
+      case LINE_STRING ->
+          validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.lineStringValue, errors);
+      case MULTI_POLYGON ->
+          validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.multiPolygonValue, errors);
       case ENUM -> validateOnlyOneFieldSet(value, "enumValue", errors);
     }
   }
@@ -316,6 +320,8 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
           case OFFSET_DATE_TIME -> value.getOffsetDateTimeValue() != null;
           case POINT -> value.getPointValue() != null;
           case ENUM -> value.getEnumValue() != null;
+          case MULTI_POLYGON -> value.getMultiPolygonValue() != null;
+          case LINE_STRING -> value.getLineStringValue() != null;
         };
 
     if (!expectedFieldSet) {
@@ -468,13 +474,12 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
       case DISTANCE_SPHERE -> {
         // Левый операнд должен быть геометрией (POINT)
         BasicType leftType = node.getLeftOperand().getNodeReturnType();
-        if (leftType != BasicType.POINT) {
+        if (!BasicTypeCategory.SPATIAL.contains(leftType)) {
           errors.add("DISTANCE_SPHERE requires POINT as left operand, got: " + leftType);
         }
-
         // Правый операнд должен быть POINT
         BasicType rightType = node.getRightOperand().getNodeReturnType();
-        if (rightType != BasicType.POINT) {
+        if (!BasicTypeCategory.SPATIAL.contains(rightType)) {
           errors.add("DISTANCE_SPHERE requires POINT as right operand, got: " + rightType);
         }
       }

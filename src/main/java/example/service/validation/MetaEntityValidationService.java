@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -424,7 +427,9 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
         || javaType == int.class
         || javaType.isEnum()
         || javaType == OffsetDateTime.class
-        || javaType == Point.class;
+        || javaType == Point.class
+        || javaType == LineString.class
+        || javaType == MultiPolygon.class;
   }
 
   private BasicType determineBasicType(Class<?> javaType) {
@@ -440,6 +445,10 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
       return BasicType.POINT;
     } else if (javaType.isEnum()) {
       return BasicType.ENUM;
+    } else if (javaType == LineString.class) {
+      return BasicType.LINE_STRING;
+    } else if (javaType == MultiPolygon.class) {
+      return BasicType.MULTI_POLYGON;
     }
     return null;
   }
