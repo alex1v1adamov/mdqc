@@ -469,7 +469,7 @@ public class ConsolePredicateVisualizer {
         return switch (operator) {
             case AND, OR -> "🔗";
             case NOT -> "🚫";
-            case EQ -> "🟰";
+            case EQ -> "==";
             case NE -> "≠";
             case GT -> "⬆️";
             case LT -> "⬇️";

@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.hibernate.Hibernate;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
@@ -396,20 +397,20 @@ class ExpressionBuilder {
   public NumberTemplate<Double> buildDistanceSphereExpression(
       EvaluationOperationNode node, PathBuilder<?> entityPath) {
     Expression<?> leftGeometry = buildAnyExpression(node.getLeftOperand(), entityPath);
-    Expression<?> rightPoint = buildAnyExpression(node.getRightOperand(), entityPath);
+    Expression<?> rightSpatial = buildAnyExpression(node.getRightOperand(), entityPath);
 
     if (!(leftGeometry instanceof ComparablePath)) {
       throw new IllegalArgumentException(
           "DISTANCE_SPHERE requires geometry attribute as left operand");
     }
 
-    Point targetPoint = extractPointValue(rightPoint);
-    if (targetPoint == null) {
+      Geometry targetGeometry = extractGeometryValue(rightSpatial);
+    if (targetGeometry == null) {
       throw new IllegalArgumentException("DISTANCE_SPHERE requires POINT as right operand");
     }
 
     ComparablePath<Point> geometryPath = (ComparablePath<Point>) leftGeometry;
-    return spatialTemplateHelper.distanceSphere(geometryPath, targetPoint);
+    return spatialTemplateHelper.distanceSphere(geometryPath, targetGeometry);
   }
 
   private Expression<?> buildAnyExpression(PredicateNode node, PathBuilder<?> entityPath) {
@@ -432,15 +433,18 @@ class ExpressionBuilder {
     }
   }
 
-  private Point extractPointValue(Expression<?> pointExpression) {
-    if (pointExpression instanceof ConstantImpl) {
-      Object value = ((ConstantImpl) pointExpression).getConstant();
-      if (value instanceof Point) {
-        return (Point) value;
-      }
+    private Geometry extractGeometryValue(Expression<?> pointExpression) {
+        if (pointExpression instanceof ConstantImpl constant) {
+            Object value = constant.getConstant();
+            return switch (value) {
+                case Point point -> point;
+                case LineString lineString -> lineString;
+                case MultiPolygon multiPolygon -> multiPolygon;
+                default -> null;
+            };
+        }
+        return null;
     }
-    return null;
-  }
 }
 
 // EntityClassResolver.java

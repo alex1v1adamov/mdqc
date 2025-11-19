@@ -296,6 +296,8 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     if (value.getOffsetDateTimeValue() != null) setFieldsCount++;
     if (value.getTimestampValue() != null) setFieldsCount++;
     if (value.getPointValue() != null) setFieldsCount++;
+    if (value.getMultiPolygonValue() != null) setFieldsCount++;
+    if (value.getLineStringValue() != null) setFieldsCount++;
     if (value.getEnumValue() != null) setFieldsCount++;
 
     if (setFieldsCount == 0) {

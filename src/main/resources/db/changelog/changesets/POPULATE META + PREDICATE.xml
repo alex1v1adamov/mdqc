@@ -488,15 +488,17 @@
         </comment>
         <sql>
             -- 10. Сложный предикат: комбинация пространственных запросов, логических условий и строковых операций
+            -- ((pet.rating >= 4 AND pet.petType IN ('CAT', 'DOG') AND pet.clinic.isOpen = true AND ST_DistanceSphere(pet.clinic.geometry, MULTIPOLYGON(...)) LT 100.0)
+            -- OR
+            -- (pet.nickname LIKE 'Л%' AND pet.loudRadius > 2.5 AND pet.loudRadius LT 6.0 AND pet.clinic.clinicName LIKE '%Главная%' AND pet.bsDateTime >= '2025-11-09 00:00:00+00'))
+            -- AND
+            -- NOT (pet.rating LT 3 OR pet.nickname LIKE '%ёт%')
+
             INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
             VALUES ('990e8400-e29b-41d4-a716-446655440010', 'AdvancedComplexPets',
                     '550e8400-e29b-41d4-a716-446655440001');
 
--- (pet.nickname LIKE 'Л%' AND loudRadius > 2.5 AND loudRadius LT 6.0 AND clinicName LIKE '%Главная%' AND bsDateTime >= '2025-11-09')
--- AND
--- (pet.rating >= 4 AND pet.petType IN ('CAT', 'DOG') AND pet.clinic.isOpen = true AND расстояние LT 100)
             -- === ЧАСТЬ 1: (pet.rating >= 4 AND pet.petType IN ('CAT', 'DOG') AND pet.clinic.isOpen = true AND расстояние LT 100) ===
-
             -- Подчасть 1.1: pet.rating >= 4
             INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
             VALUES ('aa0e8400-e29b-41d4-a716-446655440011', '880e8400-e29b-41d4-a716-446655440016');
@@ -568,8 +570,26 @@
             VALUES ('cc0e8400-e29b-41d4-a716-446655440041', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440014');
 
             -- Точка для расчета расстояния (координаты Москвы)
-            INSERT INTO predicate.predicate_node_value (id, point_value, value_type)
-            VALUES ('bb0e8400-e29b-41d4-a716-446655440015', ST_GeomFromText('POINT(37.6175 55.7558)', 4326), 'POINT');
+            INSERT INTO predicate.predicate_node_value (
+                id,
+                value_type,
+                multi_polygon_value
+            )
+            VALUES (
+                       'bb0e8400-e29b-41d4-a716-446655440015',
+                       'MULTI_POLYGON',
+                       ST_GeomFromText(
+                               'MULTIPOLYGON((
+                                   (37.6175 55.7558, 37.6275 55.7658, 37.6075 55.7658, 37.6175 55.7558)
+                               ), (
+                                   (37.6175 55.7558, 37.6275 55.7458, 37.6075 55.7458, 37.6175 55.7558)
+                               ), (
+                                   (37.6175 55.7558, 37.6375 55.7558, 37.6275 55.7458, 37.6175 55.7558)
+                               ))',
+                               4326
+                       )
+                   );
+
 
             INSERT INTO predicate.predicate_node (id, node_type, value_id)
             VALUES ('cc0e8400-e29b-41d4-a716-446655440042', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440015');
