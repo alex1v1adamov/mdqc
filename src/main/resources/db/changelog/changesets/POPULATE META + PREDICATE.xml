@@ -809,4 +809,57 @@
             WHERE id = '11111111-1111-1111-1111-111111111111';
         </sql>
     </changeSet>
+
+    <changeSet id="populate-predicate-geometry-intersects" author="system">
+        <comment>Create geometry INTERSECTS predicate for Clinic</comment>
+        <sql>
+            -- 11. Предикат: Clinic geometry intersects with polygon geometry
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
+            VALUES ('990e8400-e29b-41d4-a716-446655440011', 'ClinicsInArea',
+                    '550e8400-e29b-41d4-a716-446655440002');
+
+            -- Создаем выражение пути для geometry
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
+            VALUES ('aa0e8400-e29b-41d4-a716-446655440019', '7ac5eb66-2582-418f-b052-e5f786d96a9a');
+
+            -- Создаем узел PATH_EXPRESSION для geometry
+            INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440075', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440019');
+
+            -- Создаем полигон для проверки пересечения (например, границы района Москвы)
+            INSERT INTO predicate.predicate_node_value (
+                id,
+                value_type,
+                multi_polygon_value
+            )
+            VALUES (
+                       'bb0e8400-e29b-41d4-a716-446655440024',
+                       'MULTI_POLYGON',
+                       ST_GeomFromText(
+                               'MULTIPOLYGON(((
+                                   37.5000 55.6500,
+                                   37.7000 55.6500,
+                                   37.7000 55.8000,
+                                   37.5000 55.8000,
+                                   37.5000 55.6500
+                               )))',
+                               4326
+                       )
+                   );
+
+            -- Создаем узел VALUE_CONSTANT для полигона
+            INSERT INTO predicate.predicate_node (id, node_type, value_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440076', 'VALUE_CONSTANT', 'bb0e8400-e29b-41d4-a716-446655440024');
+
+            -- Создаем узел EVALUATION_OPERATOR для INTERSECTS
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440077', 'EVALUATION_OPERATION', 'INTERSECTS',
+                    'cc0e8400-e29b-41d4-a716-446655440075', 'cc0e8400-e29b-41d4-a716-446655440076');
+
+            -- Обновляем корневой узел предиката
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440077'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440011';
+        </sql>
+    </changeSet>
 </databaseChangeLog>

@@ -40,11 +40,9 @@ public enum OperatorType {
 
   // Географические операторы
   DISTANCE_SPHERE(
-      BasicTypeCategory.SPATIAL, BasicTypeCategory.SPATIAL, true, false, BasicType.DOUBLE);
-//TODO spatial operators
-//    WITHIN(BasicTypeCategory.SPATIAL, BasicTypeCategory.SPATIAL)
-//    INTERSECTS(BasicTypeCategory.SPATIAL, BasicTypeCategory.SPATIAL)
-//    DISTANCE_WITHIN(BasicTypeCategory.SPATIAL, BasicTypeCategory.SPATIAL)
+      BasicTypeCategory.SPATIAL, BasicTypeCategory.SPATIAL, true, false, BasicType.DOUBLE),
+  INTERSECTS(BasicTypeCategory.SPATIAL, BasicTypeCategory.SPATIAL, true, false, BasicType.BOOLEAN),
+  DISTANCE_WITHIN(BasicTypeCategory.SPATIAL, BasicTypeCategory.SPATIAL);
 
   private final BasicTypeCategory allowedLeftCategory;
   private final BasicTypeCategory allowedRightCategory;

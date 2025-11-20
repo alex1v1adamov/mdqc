@@ -1,5 +1,6 @@
 package example.controllers;
 
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import example.models.vet.Clinic;
 import example.models.vet.QClinic;
@@ -28,8 +29,9 @@ public class ClinicController {
 
     Point center = new GeometryFactory().createPoint(new Coordinate(lng, lat));
 
-    var predicate =
-        spatialHelper.distanceWithin(QClinic.clinic.geometry, center, radius).eq(Boolean.TRUE);
+
+    BooleanExpression predicate =
+        spatialHelper.distanceWithin(QClinic.clinic.geometry, center, radius);
 
     clinicRepository.findAll(predicate);
 

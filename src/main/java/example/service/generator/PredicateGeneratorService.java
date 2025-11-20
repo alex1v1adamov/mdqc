@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.hibernate.Hibernate;
@@ -54,15 +55,12 @@ public class PredicateGeneratorService {
 }
 
 @Component
+@AllArgsConstructor
 class ExpressionResolver {
 
   private final ConstantBuilder constantBuilder;
   private final ExpressionBuilder expressionBuilder;
-
-  public ExpressionResolver(ConstantBuilder constantBuilder, ExpressionBuilder expressionBuilder) {
-    this.constantBuilder = constantBuilder;
-    this.expressionBuilder = expressionBuilder;
-  }
+  private final SpatialTemplateHelper spatialTemplateHelper;
 
   public BooleanExpression buildExpression(PredicateNode node, PathBuilder<?> entityPath) {
     if (node == null) return null;
@@ -231,8 +229,39 @@ class ExpressionResolver {
       case STARTS_WITH -> Expressions.predicate(Ops.STARTS_WITH, left, right);
       case ENDS_WITH -> Expressions.predicate(Ops.ENDS_WITH, left, right);
       case CONTAINS -> Expressions.predicate(Ops.STRING_CONTAINS, left, right);
+      case INTERSECTS, DISTANCE_WITHIN ->
+          buildSpatialComparison(operatorType, left, right);
+
       default ->
           throw new IllegalArgumentException("Unsupported comparison operator: " + operatorType);
+    };
+  }
+
+  private BooleanExpression buildSpatialComparison(
+      OperatorType operatorType,
+      Expression<?> left,
+      Expression<?> right) {
+
+    if (!(left instanceof ComparablePath)) {
+      throw new IllegalArgumentException(
+          operatorType + " requires geometry attribute as left operand");
+    }
+
+    Geometry targetGeometry = expressionBuilder.extractGeometryValue(right);
+    if (targetGeometry == null) {
+      throw new IllegalArgumentException(operatorType + " requires geometry as right operand");
+    }
+
+    ComparablePath<? extends Geometry> geometryPath = (ComparablePath<? extends Geometry>) left;
+
+    return switch (operatorType) {
+      case INTERSECTS -> spatialTemplateHelper.intersects(geometryPath, targetGeometry);
+      case DISTANCE_WITHIN -> // Для DISTANCE_WITHIN нужен дополнительный параметр - расстояние
+          // TODO UN-HARDCODE!
+          // *extractDistanceParameter(node)*/;
+          spatialTemplateHelper.distanceWithin(geometryPath, targetGeometry, 0.0);
+      default ->
+          throw new IllegalArgumentException("Unsupported spatial operator: " + operatorType);
     };
   }
 
@@ -404,7 +433,7 @@ class ExpressionBuilder {
           "DISTANCE_SPHERE requires geometry attribute as left operand");
     }
 
-      Geometry targetGeometry = extractGeometryValue(rightSpatial);
+    Geometry targetGeometry = extractGeometryValue(rightSpatial);
     if (targetGeometry == null) {
       throw new IllegalArgumentException("DISTANCE_SPHERE requires POINT as right operand");
     }
@@ -433,18 +462,18 @@ class ExpressionBuilder {
     }
   }
 
-    private Geometry extractGeometryValue(Expression<?> pointExpression) {
-        if (pointExpression instanceof ConstantImpl constant) {
-            Object value = constant.getConstant();
-            return switch (value) {
-                case Point point -> point;
-                case LineString lineString -> lineString;
-                case MultiPolygon multiPolygon -> multiPolygon;
-                default -> null;
-            };
-        }
-        return null;
+  Geometry extractGeometryValue(Expression<?> pointExpression) {
+    if (pointExpression instanceof ConstantImpl constant) {
+      Object value = constant.getConstant();
+      return switch (value) {
+        case Point point -> point;
+        case LineString lineString -> lineString;
+        case MultiPolygon multiPolygon -> multiPolygon;
+        default -> null;
+      };
     }
+    return null;
+  }
 }
 
 // EntityClassResolver.java

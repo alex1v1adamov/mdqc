@@ -14,7 +14,7 @@ create type predicate.node_type as enum ('EVALUATION_OPERATION', 'VALUE_CONSTANT
 
 alter type predicate.node_type owner to postgres;
 
-create type predicate.operator_type as enum ('AND', 'OR', 'NOT', 'EQ', 'NE', 'GT', 'LT', 'GOE', 'LOE', 'LIKE', 'STARTS_WITH', 'ENDS_WITH', 'CONTAINS', 'IN', 'NOT_IN', 'BETWEEN', 'IS_NULL', 'IS_NOT_NULL', 'DISTANCE_SPHERE');
+create type predicate.operator_type as enum ('AND', 'OR', 'NOT', 'EQ', 'NE', 'GT', 'LT', 'GOE', 'LOE', 'LIKE', 'STARTS_WITH', 'ENDS_WITH', 'CONTAINS', 'IN', 'NOT_IN', 'BETWEEN', 'IS_NULL', 'IS_NOT_NULL', 'DISTANCE_SPHERE', 'INTERSECTS', 'DISTANCE_WITHIN');
 
 alter type predicate.operator_type owner to postgres;
 
@@ -24,7 +24,7 @@ create table vet.clinic
     id          varchar(255) not null
         primary key,
     clinic_name varchar(255),
-    geometry    geometry
+    geometry    geometry(Point, 4326)
 );
 
 alter table vet.clinic

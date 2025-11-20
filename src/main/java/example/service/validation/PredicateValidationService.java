@@ -15,6 +15,7 @@ import example.models.predicate.PredicateNode;
 import example.models.predicate.PredicateNodeValue;
 import example.models.predicate.PredicatePathExpression;
 import example.models.predicate.ValueConstantNode;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -270,10 +271,13 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
     // Проверяем, что заполнено только одно поле в соответствии с valueType
     switch (value.getValueType()) {
       case STRING -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.stringValue, errors);
-      case BOOLEAN -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.booleanValue, errors);
-      case INTEGER -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.integerValue, errors);
+      case BOOLEAN ->
+          validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.booleanValue, errors);
+      case INTEGER ->
+          validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.integerValue, errors);
       case DOUBLE -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.doubleValue, errors);
-      case OFFSET_DATE_TIME -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.offsetDateTimeValue, errors);
+      case OFFSET_DATE_TIME ->
+          validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.offsetDateTimeValue, errors);
       case POINT -> validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.pointValue, errors);
       case LINE_STRING ->
           validateOnlyOneFieldSet(value, PredicateNodeValue.Fields.lineStringValue, errors);
@@ -416,19 +420,15 @@ public class PredicateValidationService implements Validate<PredicateDefinition>
 
   private void validateOperatorCompatibility(
       OperatorType operator, BasicType leftType, BasicType rightType, List<String> errors) {
-    // Дополнительные проверки совместимости типов для специфичных операторов
-    switch (operator) {
-      case LIKE, STARTS_WITH, ENDS_WITH, CONTAINS -> {
-        if (leftType != BasicType.STRING || rightType != BasicType.STRING) {
-          errors.add("String operators require STRING types on both sides");
-        }
-      }
-      case GT, LT, GOE, LOE -> {
-        if (!BasicTypeCategory.ORDERED.contains(leftType)
-            || !BasicTypeCategory.ORDERED.contains(rightType)) {
-          errors.add("Ordering operators require ORDERED types (NUMERIC, TEMPORAL)");
-        }
-      }
+    if (!operator.getAllowedLeftCategory().getBasicTypes().contains(leftType)) {
+      errors.add(
+              MessageFormat.format("Operator ''{0}'' cannot be applied to left operand of type ''{1}''", operator, leftType));
+    }
+    if (!operator.getAllowedLeftCategory().getBasicTypes().contains(rightType)) {
+      errors.add(
+          MessageFormat.format(
+              "Operator ''{0}'' cannot be applied to right operand of type ''{1}''",
+              operator, leftType));
     }
   }
 
