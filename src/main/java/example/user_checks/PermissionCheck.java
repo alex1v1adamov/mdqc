@@ -15,11 +15,15 @@ import example.service.generator.PredicateGeneratorService;
 import io.vavr.collection.Stream;
 import jakarta.persistence.EntityManager;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.text.MessageFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ReflectionUtils;
 
 @Slf4j
 @SecurityCheck("RSMD")
@@ -33,17 +37,19 @@ public class PermissionCheck extends OperationCheck<Object> {
 
   @Override
   public boolean ok(
-      final Object object, final RequestScope requestScope, final Optional<ChangeSpec> optional) {
+      final Object entityObject,
+      final RequestScope requestScope,
+      final Optional<ChangeSpec> changeSpecOptional) {
 
-    ChangeSpec changeSpec = optional.get();
+    ChangeSpec changeSpec = changeSpecOptional.get();
     String entityName = changeSpec.getResource().getResourceType().getName();
-    Object attributeName = changeSpec.getFieldName();
-    //    User user = requestScope.getUser();
-    UserRole userRole = UserRole.ADMIN;
+    String attributeName = changeSpec.getFieldName();
+    UserRole userRole = UserRole.ADMIN; // TODO User user = requestScope.getUser();
     Iterable<Permission> thisEntityPermissions =
         permissionRepository.findAll(QPermission.permission.entity.name.eq(entityName));
 
-    return checkPermissions(object, Stream.ofAll(thisEntityPermissions), userRole, attributeName);
+    return checkPermissions(
+        entityObject, Stream.ofAll(thisEntityPermissions), userRole, attributeName);
   }
 
   private boolean checkPermissions(
@@ -51,56 +57,85 @@ public class PermissionCheck extends OperationCheck<Object> {
       final Stream<Permission> thisEntityPermissions,
       final UserRole userRole,
       final Object attributeName) {
-    if (thisEntityPermissions.isEmpty()) {
-      return false;
-    }
-    Stream<Permission> thisAttributePermissions =
-        thisEntityPermissions.filter(
-            x -> x.getAttribute() == null || x.getAttribute().getName().equals(attributeName));
-    if (thisAttributePermissions.isEmpty()) {
-      return false;
-    }
-    Stream<Permission> roleSatisfiedPermissions =
-        thisAttributePermissions.filter(x -> x.getUserRoles().contains(userRole));
-    if (roleSatisfiedPermissions.isEmpty()) {
-      return false;
-    }
-    Stream<Permission> forAllPredicatePermissions =
-        roleSatisfiedPermissions.filter(x -> x.getPredicateDefinition() == null);
-    if (!forAllPredicatePermissions.isEmpty()) {
+    return !thisEntityPermissions.isEmpty()
+        && thisEntityPermissions.exists(
+            permission ->
+                       matchesAttribute(permission, attributeName)
+                    && matchesUserRole(permission, userRole)
+                    && satisfiesPermissionConditions(object, permission));
+  }
+
+  private boolean matchesAttribute(Permission permission, Object attributeName) {
+    return permission.getAttribute() == null
+        || permission.getAttribute().getName().equals(attributeName);
+  }
+
+  private boolean matchesUserRole(Permission permission, UserRole userRole) {
+    return permission.getUserRoles().contains(userRole);
+  }
+
+  private boolean satisfiesPermissionConditions(Object object, Permission permission) {
+    // Разрешения без предиката удовлетворяют всегда
+    if (permission.getPredicateDefinition() == null) {
       return true;
     }
-    Stream<Permission> permissions =
-        roleSatisfiedPermissions
-            .filter(x -> x.getPredicateDefinition() != null)
-            .filter(
-                x -> {
-                  BooleanExpression booleanExpression =
-                      predicateGeneratorService.generatePredicate(x.getPredicateDefinition());
-                  PathBuilder<?> entity = new PathBuilder<>(object.getClass(), "entity");
-                  JPAQuery<?> query = new JPAQuery<>(entityManager);
-
-                  Field field;
-                  Object value;
-                  try {
-                    field = object.getClass().getDeclaredField("id");
-                    field.setAccessible(true);
-                    value = field.get(object);
-                  } catch (NoSuchFieldException | IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                  }
-
-                  BooleanExpression eqById = entity.getString("id").eq(value.toString());
-
-                  List<?> exists = query.from(entity).where(booleanExpression.and(eqById)).fetch();
-                  return !exists.isEmpty();
-                });
-
-    if (permissions.isEmpty()) {
-      return false;
-    } else {
-      log.info("Удовлетворяющие permissions: " + permissions.map(Permission::getId).toJavaList());
-      return true;
+    // Проверяем разрешения с предикатом
+    boolean satisfied = hasAllowingPermission(object, permission);
+    if (satisfied) {
+      log.debug("Permission {} satisfied with predicate", permission.getId());
     }
+    return satisfied;
+  }
+
+  private boolean hasAllowingPermission(Object entity, Permission permission) {
+    BooleanExpression predicate =
+        predicateGeneratorService.generatePredicate(permission.getPredicateDefinition());
+
+    PathBuilder<Object> entityPath = new PathBuilder<>(entity.getClass(), "entity");
+    String entityId = extractEntityId(entity);
+    BooleanExpression idCondition = entityPath.getString("id").eq(entityId);
+
+    try {
+      List<?> results =
+          new JPAQuery<>(entityManager).from(entityPath).where(predicate.and(idCondition)).fetch();
+      return !results.isEmpty();
+    } catch (Exception e) {
+      throw new RuntimeException(
+          MessageFormat.format(
+              "Failed to check permission for entity: {0}", entity.getClass().getSimpleName()),
+          e);
+    }
+  }
+
+  /** Извлекает ID сущности через рефлексию */
+  private String extractEntityId(Object entity) {
+    Objects.requireNonNull(entity, "Entity cannot be null");
+
+    // Пробуем геттер
+    Method getId = ReflectionUtils.findMethod(entity.getClass(), "getId");
+    if (getId != null) {
+      Object idValue = ReflectionUtils.invokeMethod(getId, entity);
+      return validateAndConvertId(idValue);
+    }
+
+    // Пробуем поле
+    Field idField = ReflectionUtils.findField(entity.getClass(), "id");
+    if (idField != null) {
+      ReflectionUtils.makeAccessible(idField);
+      Object idValue = ReflectionUtils.getField(idField, entity);
+      return validateAndConvertId(idValue);
+    }
+
+    throw new IllegalArgumentException(
+        MessageFormat.format(
+            "Entity class {0} does not have ''id'' field or getter",
+            entity.getClass().getSimpleName()));
+  }
+
+  private String validateAndConvertId(Object idValue) {
+    if (idValue == null) {
+      throw new IllegalArgumentException("Entity ID cannot be null");
+    }
+    return idValue instanceof String str ? str : idValue.toString();
   }
 }
