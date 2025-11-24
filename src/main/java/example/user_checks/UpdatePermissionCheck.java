@@ -7,6 +7,7 @@ import com.yahoo.elide.annotation.SecurityCheck;
 import com.yahoo.elide.core.security.ChangeSpec;
 import com.yahoo.elide.core.security.RequestScope;
 import com.yahoo.elide.core.security.checks.OperationCheck;
+import example.models.policy.OperationType;
 import example.models.policy.Permission;
 import example.models.policy.QPermission;
 import example.models.policy.UserRole;
@@ -26,10 +27,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
 @Slf4j
-@SecurityCheck("RSMD")
+@SecurityCheck("FGAS.UPDATE")
 @Component
 @RequiredArgsConstructor
-public class PermissionCheck extends OperationCheck<Object> {
+public class UpdatePermissionCheck extends OperationCheck<Object> {
 
   private final PermissionRepository permissionRepository;
   private final PredicateGeneratorService predicateGeneratorService;
@@ -46,7 +47,8 @@ public class PermissionCheck extends OperationCheck<Object> {
     String attributeName = changeSpec.getFieldName();
     UserRole userRole = UserRole.ADMIN; // TODO User user = requestScope.getUser();
     Iterable<Permission> thisEntityPermissions =
-        permissionRepository.findAll(QPermission.permission.entity.name.eq(entityName));
+        permissionRepository.findAll(QPermission.permission.entity.name.eq(entityName).and(
+                QPermission.permission.operationType.eq(OperationType.UPDATE)));
 
     return checkPermissions(
         entityObject, Stream.ofAll(thisEntityPermissions), userRole, attributeName);

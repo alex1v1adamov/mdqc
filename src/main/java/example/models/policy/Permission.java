@@ -4,6 +4,7 @@ import com.yahoo.elide.annotation.Include;
 import example.models.meta.MetaAttribute;
 import example.models.meta.MetaEntity;
 import example.models.predicate.PredicateDefinition;
+import example.models.vet.PetType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -56,4 +57,9 @@ public class Permission {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "predicate_id")
   PredicateDefinition predicateDefinition;
+
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "operation_type", nullable = false)
+    OperationType operationType;
 }

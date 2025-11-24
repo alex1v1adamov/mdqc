@@ -59,6 +59,11 @@
     </dependencyManagement>
 
     <dependencies>
+        <dependency>
+            <groupId>com.querydsl</groupId>
+            <artifactId>querydsl-collections</artifactId>
+            <version>${querydsl.version}</version> <!-- Используйте версию, совместимую с вашим QueryDSL -->
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.shell</groupId>

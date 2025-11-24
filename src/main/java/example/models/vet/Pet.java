@@ -18,7 +18,7 @@ import java.time.OffsetDateTime;
 import lombok.Getter;
 import lombok.Setter;
 
-@UpdatePermission(expression = "RSMD")
+@UpdatePermission(expression = "FGAS.UPDATE")
 @Include(name = "pet")
 @Table(schema = "vet", name = "pet")
 @Entity
@@ -31,7 +31,7 @@ public class Pet {
   private String nickname = "";
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status")
+  @Column(name = "pet_type")
   PetType petType;
 
   @Column(name = "bs_date_time")

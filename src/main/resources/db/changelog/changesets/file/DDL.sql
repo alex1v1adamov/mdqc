@@ -38,9 +38,9 @@ create table vet.pet
     clinic_id varchar(255)
         constraint fklqswy7od0wada8ep1ra6jqt20
             references vet.clinic,
-    status    varchar(255)
+    pet_type  varchar(255)
         constraint pet_type_check
-            check ((status)::text = ANY
+            check ((pet_type)::text = ANY
         ((ARRAY ['CAT':: character varying, 'DOG':: character varying, 'BIRD':: character varying])::text[])
 ) ,
     bs_date_time timestamp with time zone,
@@ -395,17 +395,18 @@ create index idx_predicate_definition_name
 
 create table policy.permission
 (
-    id           uuid not null
+    id             uuid         not null
         primary key,
-    entity_id    uuid not null
+    entity_id      uuid         not null
         constraint fk_permission_entity_id
             references meta.meta_entity,
-    attribute_id uuid not null
+    attribute_id   uuid         not null
         constraint fk_permission_attribute_id
             references meta.meta_attribute,
-    predicate_id uuid
+    predicate_id   uuid
         constraint fk_permission_predicate_id
-            references predicate.predicate_definition
+            references predicate.predicate_definition,
+    operation_type varchar(255) not null
 );
 
 alter table policy.permission

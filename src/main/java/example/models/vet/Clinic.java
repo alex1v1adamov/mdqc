@@ -7,25 +7,21 @@ package example.models.vet;
 
 import static com.yahoo.elide.annotation.LifeCycleHookBinding.Operation.UPDATE;
 import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.POSTCOMMIT;
-import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.PRECOMMIT;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.yahoo.elide.annotation.CreatePermission;
 import com.yahoo.elide.annotation.Include;
 import com.yahoo.elide.annotation.LifeCycleHookBinding;
 import com.yahoo.elide.annotation.UpdatePermission;
 import com.yahoo.elide.graphql.subscriptions.annotations.Subscription;
-import com.yahoo.elide.graphql.subscriptions.annotations.SubscriptionField;
 import example.lifecycle_hooks.TestHook;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.GenericGenerator;
 import org.locationtech.jts.geom.Point;
 
 @Include
@@ -34,21 +30,26 @@ import org.locationtech.jts.geom.Point;
 @Subscription
 @Data
 @LifeCycleHookBinding(operation = UPDATE, phase = POSTCOMMIT, hook = TestHook.class)
-@UpdatePermission(expression = "RSMD")
+@UpdatePermission(expression = "FGAS.UPDATE")
+@CreatePermission(expression = "FGAS.CREATE")
 @Getter
 @Setter
 public class Clinic {
-  @Id private String id = "";
 
-//  @SubscriptionField
+  @Id
+  @GeneratedValue(generator = "UUID")
+  @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+  private String id = "";
+
+  //  @SubscriptionField
   @Column(name = "clinic_name")
   private String clinicName = "";
 
-//  @SubscriptionField
+  //  @SubscriptionField
   @Column(name = "is_open")
-  private Boolean isOpen;
+  private Boolean isOpen = false;
 
-//  @SubscriptionField
+  //  @SubscriptionField
   @OneToMany(mappedBy = "clinic")
   @JsonIgnore
   private List<Pet> pets = new ArrayList<>();

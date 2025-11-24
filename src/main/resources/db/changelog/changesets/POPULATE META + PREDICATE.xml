@@ -862,4 +862,67 @@
             WHERE id = '990e8400-e29b-41d4-a716-446655440011';
         </sql>
     </changeSet>
-</databaseChangeLog>
+
+    <changeSet id="populate-predicate-distance-within" author="system">
+        <comment>Create DISTANCE_WITHIN predicate for spatial distance check with multiple values</comment>
+        <sql>
+            -- 12. Предикат: Clinic geometry within distance from polygon using DISTANCE_WITHIN operator
+            INSERT INTO predicate.predicate_definition (id, name, meta_entity_id)
+            VALUES ('990e8400-e29b-41d4-a716-446655440012', 'ClinicsWithinDistance',
+                    '550e8400-e29b-41d4-a716-446655440002');
+
+            -- Создаем выражение пути для geometry клиники
+            INSERT INTO predicate.predicate_path_expression (id, final_path_attribute)
+            VALUES ('aa0e8400-e29b-41d4-a716-446655440020', '7ac5eb66-2582-418f-b052-e5f786d96a9a');
+
+            -- Создаем узел PATH_EXPRESSION для geometry
+            INSERT INTO predicate.predicate_node (id, node_type, path_expression_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440078', 'PATH_EXPRESSION', 'aa0e8400-e29b-41d4-a716-446655440020');
+
+            -- Создаем MULTI_POLYGON для расчета расстояния (первое значение)
+            INSERT INTO predicate.predicate_node_value (
+                id,
+                value_type,
+                multi_polygon_value
+            )
+            VALUES (
+                       'bb0e8400-e29b-41d4-a716-446655440025',
+                       'MULTI_POLYGON',
+                       ST_GeomFromText(
+                               'MULTIPOLYGON(((
+                                   37.6175 55.7558,
+                                   37.6275 55.7658,
+                                   37.6075 55.7658,
+                                   37.6175 55.7558
+                               )))',
+                               4326
+                       )
+                   );
+
+            -- Создаем значение расстояния в метрах (второе значение)
+            INSERT INTO predicate.predicate_node_value (id, double_value, value_type)
+            VALUES ('bb0e8400-e29b-41d4-a716-446655440026', 500.0, 'DOUBLE');
+
+            -- Создаем узел VALUE_CONSTANT с множественными значениями (MULTI_POLYGON и DOUBLE)
+            INSERT INTO predicate.predicate_node (id, node_type)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440079', 'VALUE_CONSTANT');
+
+            -- Добавляем значения в список values (порядок важен: сначала геометрия, потом расстояние)
+            INSERT INTO predicate.predicate_node_in_values (predicate_node_id, node_value_id, value_order)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440079', 'bb0e8400-e29b-41d4-a716-446655440025', 0),
+                   ('cc0e8400-e29b-41d4-a716-446655440079', 'bb0e8400-e29b-41d4-a716-446655440026', 1);
+
+            -- Создаем узел EVALUATION_OPERATOR для DISTANCE_WITHIN
+            -- DISTANCE_WITHIN принимает:
+            -- - left_operand: геометрия клиники (PATH_EXPRESSION)
+            -- - right_operand: ValueConstantNode с двумя значениями [MULTI_POLYGON, DOUBLE]
+            INSERT INTO predicate.predicate_node (id, node_type, operator_type, left_operand_id, right_operand_id)
+            VALUES ('cc0e8400-e29b-41d4-a716-446655440080', 'EVALUATION_OPERATION', 'DISTANCE_WITHIN',
+                    'cc0e8400-e29b-41d4-a716-446655440078', 'cc0e8400-e29b-41d4-a716-446655440079');
+
+            -- Обновляем корневой узел предиката
+            UPDATE predicate.predicate_definition
+            SET root_node_id = 'cc0e8400-e29b-41d4-a716-446655440080'
+            WHERE id = '990e8400-e29b-41d4-a716-446655440012';
+        </sql>
+    </changeSet></databaseChangeLog>
