@@ -24,7 +24,8 @@ create table vet.clinic
     id          varchar(255) not null
         primary key,
     clinic_name varchar(255),
-    geometry    geometry(Point, 4326)
+    geometry    geometry(Point, 4326),
+    rating       integer
 );
 
 alter table vet.clinic

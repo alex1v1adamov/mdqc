@@ -5,8 +5,10 @@
  */
 package example.models.vet;
 
+import static com.yahoo.elide.annotation.LifeCycleHookBinding.Operation.CREATE;
 import static com.yahoo.elide.annotation.LifeCycleHookBinding.Operation.UPDATE;
 import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.POSTCOMMIT;
+import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.PRECOMMIT;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.yahoo.elide.annotation.CreatePermission;
@@ -27,9 +29,9 @@ import org.locationtech.jts.geom.Point;
 @Include
 @Table(schema = "vet")
 @Entity
-@Subscription
+//@Subscription
 @Data
-@LifeCycleHookBinding(operation = UPDATE, phase = POSTCOMMIT, hook = TestHook.class)
+@LifeCycleHookBinding(operation = CREATE, phase = PRECOMMIT, hook = TestHook.class, oncePerRequest = false)
 @UpdatePermission(expression = "FGAS.UPDATE")
 @CreatePermission(expression = "FGAS.CREATE")
 @Getter
@@ -44,6 +46,8 @@ public class Clinic {
   //  @SubscriptionField
   @Column(name = "clinic_name")
   private String clinicName = "";
+
+    private  Integer rating;
 
   //  @SubscriptionField
   @Column(name = "is_open")
@@ -60,5 +64,5 @@ public class Clinic {
   //        )
   //
 
-  private Point geometry;
+    private Point geometry;
 }
