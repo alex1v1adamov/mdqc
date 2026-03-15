@@ -1,10 +1,7 @@
-package example.user_checks;
+package example.check.create;
 
-import com.querydsl.collections.CollQuery;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
-import com.querydsl.collections.CollQueryFactory;
-import com.querydsl.jpa.impl.JPAQuery;
 import com.yahoo.elide.annotation.SecurityCheck;
 import com.yahoo.elide.core.security.ChangeSpec;
 import com.yahoo.elide.core.security.RequestScope;
@@ -16,25 +13,20 @@ import example.models.policy.UserRole;
 import example.repo.PermissionRepository;
 import example.service.generator.PredicateGeneratorService;
 import io.vavr.collection.Stream;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
-
 @Slf4j
 @SecurityCheck("FGAS.CREATE")
 @Component
 @RequiredArgsConstructor
-public class NEWCreatePermissionCheck extends OperationCheck<Object> {
+public class CreatePermissionCheck extends OperationCheck<Object> {
 
     private final PermissionRepository permissionRepository;
     private final PredicateGeneratorService predicateGeneratorService;
-    private final EntityManager entityManager;
+    private final CreatePermissionEvaluationService evaluationService;
 
     @Override
     public boolean ok(
@@ -45,7 +37,7 @@ public class NEWCreatePermissionCheck extends OperationCheck<Object> {
         String entityName = entityObject.getClass().getName();
         UserRole userRole = UserRole.ADMIN; // TODO: получить из requestScope
         log.debug("Checking CREATE permission for entity: {}, userRole: {}", entityName, userRole);
-        // Получаем все CREATE разрешения для данной сущности
+
         Iterable<Permission> thisEntityPermissions =
                 permissionRepository.findAll(QPermission.permission.entity.name.eq(entityName)
                         .and(QPermission.permission.operationType.eq(OperationType.CREATE)));
@@ -75,13 +67,11 @@ public class NEWCreatePermissionCheck extends OperationCheck<Object> {
     }
 
     private boolean satisfiesCreatePermissionConditions(Object entityObject, Permission permission) {
-        // Разрешения без предиката удовлетворяют всегда
         if (permission.getPredicateDefinition() == null) {
             log.debug("Permission {} satisfied (no predicate)", permission.getId());
             return true;
         }
 
-        // Проверяем разрешения с предикатом используя querydsl-collections
         boolean satisfied = evaluatePredicateInMemory(entityObject, permission);
         if (satisfied) {
             log.debug("Permission {} satisfied with predicate", permission.getId());
@@ -98,34 +88,20 @@ public class NEWCreatePermissionCheck extends OperationCheck<Object> {
 
             log.debug("Generated predicate for permission {}: {}", permission.getId(), predicate);
 
-            // Создаем типизированный PathBuilder
             @SuppressWarnings("unchecked")
             Class<Object> entityClass = (Class<Object>) entityObject.getClass();
             PathBuilder<Object> entityPath = new PathBuilder<>(entityClass, "entity");
 
-            // Создаем список с явным типом
-            List<Object> entities = Collections.<Object>singletonList(entityObject);
-
-            // Явно вызываем нужный метод
-
-            long count = new CollQuery<Void>()
-                    .from(entityPath, entities)
-                    .select(entityPath)
-                    .where(predicate)
-                    .fetchCount();
-
-            return count > 0;
+            // Используем evaluation service для проверки в отдельной транзакции
+            return evaluationService.evaluatePermission(entityObject, predicate, entityPath);
 
         } catch (Exception e) {
-            log.warn("Failed to evaluate create permission predicate in memory for entity: {}, permission: {}",
+            log.warn("Failed to evaluate create permission predicate for entity: {}, permission: {}",
                     entityObject.getClass().getSimpleName(), permission.getId(), e);
             return false;
         }
     }
 
-    // Дополнительные утилитные методы для совместимости с существующим кодом
-
-    /** Извлекает ID сущности (для логирования и совместимости) */
     private String extractEntityId(Object entity) {
         try {
             var getIdMethod = entity.getClass().getMethod("getId");

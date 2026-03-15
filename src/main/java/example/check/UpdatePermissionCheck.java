@@ -1,4 +1,4 @@
-package example.user_checks;
+package example.check;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
