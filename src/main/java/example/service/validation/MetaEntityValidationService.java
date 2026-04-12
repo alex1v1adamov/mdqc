@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.MultiPolygon;
 import org.locationtech.jts.geom.Point;
@@ -429,7 +430,8 @@ public class MetaEntityValidationService implements Validate<MetaEntity> {
         || javaType == OffsetDateTime.class
         || javaType == Point.class
         || javaType == LineString.class
-        || javaType == MultiPolygon.class;
+        || javaType == MultiPolygon.class
+        || javaType == Geometry.class;
   }
 
   private BasicType determineBasicType(Class<?> javaType) {

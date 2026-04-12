@@ -6,8 +6,6 @@
 package example.models.vet;
 
 import static com.yahoo.elide.annotation.LifeCycleHookBinding.Operation.CREATE;
-import static com.yahoo.elide.annotation.LifeCycleHookBinding.Operation.UPDATE;
-import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.POSTCOMMIT;
 import static com.yahoo.elide.annotation.LifeCycleHookBinding.TransactionPhase.PRECOMMIT;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,8 +13,10 @@ import com.yahoo.elide.annotation.CreatePermission;
 import com.yahoo.elide.annotation.Include;
 import com.yahoo.elide.annotation.LifeCycleHookBinding;
 import com.yahoo.elide.annotation.UpdatePermission;
-import com.yahoo.elide.graphql.subscriptions.annotations.Subscription;
+import com.yahoo.elide.core.filter.Operator;
+import com.yahoo.elide.datastores.jpql.annotations.JPQLFilterFragment;
 import example.lifecycle_hooks.TestHook;
+import example.test.gpt.v2.GeometryIntersectsFilter;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,14 +24,19 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
+import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 
 @Include
 @Table(schema = "vet")
 @Entity
-//@Subscription
+// @Subscription
 @Data
-@LifeCycleHookBinding(operation = CREATE, phase = PRECOMMIT, hook = TestHook.class, oncePerRequest = false)
+@LifeCycleHookBinding(
+    operation = CREATE,
+    phase = PRECOMMIT,
+    hook = TestHook.class,
+    oncePerRequest = false)
 @UpdatePermission(expression = "FGAS.UPDATE")
 @CreatePermission(expression = "FGAS.CREATE")
 @Getter
@@ -47,7 +52,7 @@ public class Clinic {
   @Column(name = "clinic_name")
   private String clinicName = "";
 
-    private  Integer rating;
+  private Integer rating;
 
   //  @SubscriptionField
   @Column(name = "is_open")
@@ -58,11 +63,9 @@ public class Clinic {
   @JsonIgnore
   private List<Pet> pets = new ArrayList<>();
 
-  //        @JPQLFilterFragment(
-  //                operator = Operator.NOTEMPTY ,  // Repurpose this operator
-  //                generator = WithinRadiusGenerator.class
-  //        )
-  //
-
-    private Point geometry;
+  @JPQLFilterFragment(
+      operator = Operator.IN, // Repurpose this operator
+      generator = GeometryIntersectsFilter.class)
+  @Column(columnDefinition = "geometry(Point, 4326)")
+  private Geometry geometry;
 }
